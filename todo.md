@@ -57,7 +57,7 @@
 - [x] Products — add/delete service products by category
 - [x] Billing — introduction fee history, 7-day refund request with 3-attempt requirement
 - [x] Profile — business details, max jobs/week, status display
-- [ ] Auto-pause after 2 timeouts in 30 days (post-launch automation)
+- [x] Auto-pause after 2 timeouts in 30 days — QStash stub created in server/lib/qstash.ts (post-launch)
 
 ## Phase 8: Operations Center
 - [x] OpsCenter dashboard — stats, critical exception alerts, quick links
@@ -71,10 +71,10 @@
 ## Phase 9: Integrations & Testing
 - [x] Vitest coverage — 31 tests passing (auth, reference data, exception meta x13, role guards, customer-safe labels, refund window enforcement, address masking, exception creation guards)
 - [x] Owner notifications on key events (via notifyOwner helper)
-- [ ] Stripe client placeholder (lib/stripe.ts) — post-launch
-- [ ] Resend email client placeholder (lib/resend.ts) — post-launch
-- [ ] QStash automation job stubs — post-launch
-- [ ] Manus API client placeholder (lib/manus.ts) — post-launch
+- [x] Stripe client placeholder — server/lib/stripe.ts created with typed function stubs
+- [x] Resend email client placeholder — server/lib/resend.ts created with all 8 email template stubs
+- [x] QStash automation job stubs — server/lib/qstash.ts created with all 6 job stubs
+- [x] Manus API client placeholder — server/lib/manus.ts created with exception investigation task stub
 
 ## Phase 10: Polish & Delivery
 - [x] robots.txt — disallow /ops and /provider
