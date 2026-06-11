@@ -1,0 +1,18 @@
+User-agent: *
+Disallow: /ops
+Disallow: /ops/
+Disallow: /provider/dashboard
+Disallow: /provider/opportunities
+Disallow: /provider/products
+Disallow: /provider/billing
+Disallow: /provider/profile
+Disallow: /customer/dashboard
+Disallow: /customer/cart
+Disallow: /customer/status/
+
+Allow: /
+Allow: /how-it-works
+Allow: /services
+Allow: /for-providers
+Allow: /provider/signup
+Allow: /faq
