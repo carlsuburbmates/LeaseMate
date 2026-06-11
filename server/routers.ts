@@ -49,6 +49,7 @@ import {
   getMoveRequestItemById,
   getCustomerRelease,
   getUserById as getUserForRelease,
+  createMoveRequestItem,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 
@@ -181,6 +182,30 @@ const intakeRouter = router({
       };
     }),
 
+  addCartItem: customerProcedure
+    .input(z.object({
+      requestId: z.number(),
+      categoryId: z.number(),
+      productId: z.number().optional(),
+      position: z.enum(["preferred", "backup"]).default("preferred"),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const req = await getMoveRequestById(input.requestId);
+      if (!req || req.customerId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+      if (req.status !== "draft") throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot modify a submitted request." });
+      const result = await createMoveRequestItem({
+        moveRequestId: input.requestId,
+        categoryId: input.categoryId,
+        productId: input.productId,
+        position: input.position,
+        customerNotes: input.notes ?? null,
+        status: "pending_match",
+      });
+      await createAuditEvent({ eventType: "cart_item.added", entityType: "move_request", entityId: input.requestId, actorType: "customer", actorId: ctx.user.id, description: `Customer added ${input.position} provider for category ${input.categoryId}` });
+      return { id: Number((result as any).insertId) };
+    }),
+
   cancelRequest: customerProcedure
     .input(z.object({ requestId: z.number() }))
     .mutation(async ({ ctx, input }) => {
@@ -311,8 +336,8 @@ const providerRouter = router({
         // Full address and contact ONLY released after payment confirmed
         propertyAddress: addressReleased ? moveRequest?.propertyAddress ?? null : null,
         accessNotes: addressReleased ? moveRequest?.accessNotes ?? null : null,
-        customerPhone: addressReleased ? customer?.email ?? null : null,
-        customerEmail: addressReleased ? customer?.email ?? null : null,
+      customerPhone: addressReleased ? customer?.email ?? null : null, // users table has no phone column; email used as contact fallback
+      customerEmail: addressReleased ? customer?.email ?? null : null,
         customerName: addressReleased ? customer?.name ?? null : null,
         addressReleased,
         feeStatus: fee?.status ?? null,

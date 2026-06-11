@@ -33,6 +33,7 @@ import OpsRequests from "./pages/ops/Requests";
 import OpsAuditLog from "./pages/ops/AuditLog";
 import OpsProviders from "./pages/ops/Providers";
 import OpsSystemHealth from "./pages/ops/SystemHealth";
+import OpsRequestDetail from "./pages/ops/RequestDetail";
 
 function Router() {
   return (
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/ops/exceptions" component={OpsExceptions} />
       <Route path="/ops/exceptions/:id" component={OpsExceptionDetail} />
       <Route path="/ops/requests" component={OpsRequests} />
+      <Route path="/ops/requests/:id" component={OpsRequestDetail} />
       <Route path="/ops/audit" component={OpsAuditLog} />
       <Route path="/ops/providers" component={OpsProviders} />
       <Route path="/ops/health" component={OpsSystemHealth} />

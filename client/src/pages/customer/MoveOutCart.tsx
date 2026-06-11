@@ -23,11 +23,22 @@ const BIG_6 = [
 
 const STEPS = ["Property Details", "Services", "Review & Submit"];
 
+// Map BIG_6 slug → seeded category ID
+const CATEGORY_ID_MAP: Record<string, number> = {
+  removalist: 1,
+  cleaning: 2,
+  carpet: 3,
+  pest: 4,
+  rubbish: 5,
+  handyman: 6,
+};
+
 export default function MoveOutCart() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
   const [requestId, setRequestId] = useState<number | null>(null);
+  const [isSavingItems, setIsSavingItems] = useState(false);
 
   const [property, setProperty] = useState({
     address: "",
@@ -42,9 +53,28 @@ export default function MoveOutCart() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   const { data: suburbs } = trpc.reference.suburbs.useQuery();
+  const addCartItem = trpc.intake.addCartItem.useMutation();
   const createRequest = trpc.intake.createRequest.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setRequestId(data.id);
+      // Persist each selected service as a cart item
+      setIsSavingItems(true);
+      try {
+        await Promise.all(
+          selectedServices.map((slug) =>
+            addCartItem.mutateAsync({
+              requestId: data.id,
+              categoryId: CATEGORY_ID_MAP[slug] ?? 1,
+              position: "preferred",
+            })
+          )
+        );
+      } catch (err: any) {
+        toast.error("Failed to save service selections. Please try again.");
+        setIsSavingItems(false);
+        return;
+      }
+      setIsSavingItems(false);
       setStep(2);
     },
     onError: (err) => toast.error(err.message),
@@ -256,7 +286,7 @@ export default function MoveOutCart() {
               </Button>
               <Button
                 className="rounded-md bg-[#2C2C2C] hover:bg-[#1a1a1a] text-white px-8 h-11"
-                disabled={!canProceedStep1 || createRequest.isPending}
+                disabled={!canProceedStep1 || createRequest.isPending || isSavingItems}
                 onClick={() => createRequest.mutate({
                   propertyAddress: property.address,
                   propertySuburb: property.suburb,
@@ -268,7 +298,7 @@ export default function MoveOutCart() {
                   moveOutDate: property.moveOutDate || undefined,
                 })}
               >
-                {createRequest.isPending ? "Saving…" : "Review Cart"} <ArrowRight size={14} className="ml-2" />
+                {createRequest.isPending || isSavingItems ? "Saving…" : "Review Cart"} <ArrowRight size={14} className="ml-2" />
               </Button>
             </div>
           </div>

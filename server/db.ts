@@ -425,3 +425,10 @@ export async function getOpsDashboardStats() {
     paidFees: Number(paidFees?.count ?? 0),
   };
 }
+
+export async function createMoveRequestItem(data: typeof moveRequestItems.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [result] = await db.insert(moveRequestItems).values(data);
+  return result;
+}

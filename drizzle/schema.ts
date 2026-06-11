@@ -115,7 +115,7 @@ export const moveRequestItems = mysqlTable("move_request_items", {
   id: int("id").autoincrement().primaryKey(),
   moveRequestId: int("moveRequestId").notNull(),
   categoryId: int("categoryId").notNull(),
-  productId: int("productId").notNull(),
+  productId: int("productId"),
   position: mysqlEnum("position", ["preferred", "backup"]).notNull(),
   status: mysqlEnum("status", [
     "pending_match",

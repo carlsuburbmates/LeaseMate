@@ -96,7 +96,7 @@ export default function OpsSystemHealth() {
                 <tbody>
                   {(tasks as any[] ?? []).map((t: any) => (
                     <tr key={t.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="px-4 py-3 text-white/60 font-mono text-xs">{t.taskType}</td>
+                      <td className="px-4 py-3 text-white/60 font-mono text-xs">{t.jobType}</td>
                       <td className="px-4 py-3 text-white/40 text-xs">{t.entityType} #{t.entityId}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium ${TASK_STATUS_COLOR[t.status] ?? "text-white/40"}`}>
@@ -106,7 +106,7 @@ export default function OpsSystemHealth() {
                       <td className="px-4 py-3 text-white/30 text-xs">
                         {t.scheduledAt ? new Date(t.scheduledAt).toLocaleString("en-AU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-white/30 text-xs">{t.retryCount ?? 0}</td>
+                      <td className="px-4 py-3 text-white/30 text-xs">{t.attemptCount ?? 0}</td>
                     </tr>
                   ))}
                 </tbody>
