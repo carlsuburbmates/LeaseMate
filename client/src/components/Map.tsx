@@ -86,7 +86,14 @@ declare global {
   }
 }
 
-const API_KEY = import.meta.env.VITE_FRONTEND_FORGE_API_KEY;
+// LOCAL DEV NOTE:
+// Two ways to configure Google Maps:
+// 1. Manus/Forge proxy (default in production): set VITE_FRONTEND_FORGE_API_KEY + VITE_FRONTEND_FORGE_API_URL
+// 2. Direct Google Maps API key (local dev): set VITE_GOOGLE_MAPS_API_KEY
+//    Get a key at https://console.cloud.google.com/ → APIs & Services → Credentials
+//    Enable: Maps JavaScript API, Places API, Geocoding API
+const FORGE_API_KEY = import.meta.env.VITE_FRONTEND_FORGE_API_KEY;
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const FORGE_BASE_URL =
   import.meta.env.VITE_FRONTEND_FORGE_API_URL ||
   "https://forge.butterfly-effect.dev";
@@ -95,7 +102,18 @@ const MAPS_PROXY_URL = `${FORGE_BASE_URL}/v1/maps/proxy`;
 function loadMapScript() {
   return new Promise(resolve => {
     const script = document.createElement("script");
-    script.src = `${MAPS_PROXY_URL}/maps/api/js?key=${API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
+    // Use direct Google Maps API key if available (local dev), otherwise use Forge proxy (Manus/production)
+    if (GOOGLE_MAPS_API_KEY) {
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
+    } else if (FORGE_API_KEY) {
+      script.src = `${MAPS_PROXY_URL}/maps/api/js?key=${FORGE_API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
+    } else {
+      console.warn(
+        "[Map] No Google Maps API key configured. Set VITE_GOOGLE_MAPS_API_KEY in .env for local dev. Maps will not load."
+      );
+      resolve(null);
+      return;
+    }
     script.async = true;
     script.crossOrigin = "anonymous";
     script.onload = () => {
@@ -104,6 +122,7 @@ function loadMapScript() {
     };
     script.onerror = () => {
       console.error("Failed to load Google Maps script");
+      resolve(null);
     };
     document.head.appendChild(script);
   });

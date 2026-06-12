@@ -6,6 +6,15 @@ import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
+// LOCAL DEV NOTE:
+// vitePluginManusRuntime — injects a Manus platform runtime script into the HTML.
+//   Locally this is harmless: the script detects it is not in the Manus container
+//   and does nothing. You can safely leave it enabled.
+// jsxLocPlugin — injects JSX source-location attributes for Manus's visual editor.
+//   Also harmless locally; adds data-loc attributes to DOM elements in dev mode.
+// vitePluginManusDebugCollector — writes browser logs to .manus-logs/ during dev.
+//   Harmless locally; the endpoint simply won't be called outside Manus.
+
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
 // Writes browser logs directly to files, trimmed when exceeding size limit
@@ -170,14 +179,18 @@ export default defineConfig({
   },
   server: {
     host: true,
+    // LOCAL DEV: localhost and 127.0.0.1 are always allowed.
+    // The .manus.computer / .manusvm.computer entries are Manus platform
+    // sandbox domains — they are harmless to keep and allow the same config
+    // to work both locally and inside Manus without modification.
     allowedHosts: [
+      "localhost",
+      "127.0.0.1",
       ".manuspre.computer",
       ".manus.computer",
       ".manus-asia.computer",
       ".manuscomputer.ai",
       ".manusvm.computer",
-      "localhost",
-      "127.0.0.1",
     ],
     fs: {
       strict: true,

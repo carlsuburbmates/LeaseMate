@@ -8,4 +8,8 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
+  // APP_URL is the public base URL of the app (e.g. https://leasemate.com.au or http://localhost:3000).
+  // Used for constructing absolute links in emails and webhooks.
+  // Falls back to VITE_OAUTH_PORTAL_URL for backwards compatibility with Manus deployments.
+  appUrl: process.env.APP_URL ?? process.env.VITE_OAUTH_PORTAL_URL ?? "http://localhost:3000",
 };

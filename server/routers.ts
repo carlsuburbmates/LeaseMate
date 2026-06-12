@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -178,7 +179,7 @@ const intakeRouter = router({
             ? reqData.moveOutDate.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
             : String(reqData?.moveOutDate ?? ""),
           serviceCount: items.length,
-          dashboardUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? "https://leasemate.com.au"}/customer/requests/${input.requestId}`,
+          dashboardUrl: `${ENV.appUrl}/customer/requests/${input.requestId}`,
         }).catch(() => {});
       }
       return { success: true };
@@ -547,7 +548,7 @@ const opsRouter = router({
           suburb: "",
           refundAmount: `$${parseFloat(fee.amount).toFixed(2)}`,
           refundReason: input.notes ?? "Approved by operator.",
-          billingUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? "https://leasemate.com.au"}/provider/billing`,
+          billingUrl: `${ENV.appUrl}/provider/billing`,
         }).catch(() => {});
       }
       return { success: true };

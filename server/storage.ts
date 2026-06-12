@@ -1,8 +1,27 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uploads via Forge Server presigned URL to S3 (PUT direct).
-// Downloads return /manus-storage/{key} paths served via 307 redirect.
-
+/**
+ * Storage helpers.
+ *
+ * In production (Manus/Vercel) files are stored via the Forge presign API and
+ * served through the /manus-storage/ proxy route.
+ *
+ * LOCAL DEV FALLBACK: When BUILT_IN_FORGE_API_URL / BUILT_IN_FORGE_API_KEY are
+ * absent the module falls back to writing files to a local `uploads/` directory
+ * inside the project root and serving them at /local-uploads/:key.
+ * This lets the server start and file-upload features work without any cloud
+ * credentials. Files are NOT persisted across restarts in this mode.
+ *
+ * To enable local storage: leave BUILT_IN_FORGE_API_URL unset (or set
+ * LOCAL_STORAGE_FALLBACK=true). Files will be written to ./uploads/.
+ */
+import fs from "node:fs";
+import path from "node:path";
 import { ENV } from "./_core/env";
+
+const LOCAL_UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
+
+function isForgeConfigured(): boolean {
+  return Boolean(ENV.forgeApiUrl && ENV.forgeApiKey);
+}
 
 function getForgeConfig() {
   const forgeUrl = ENV.forgeApiUrl;
@@ -15,6 +34,12 @@ function getForgeConfig() {
   }
 
   return { forgeUrl: forgeUrl.replace(/\/+$/, ""), forgeKey };
+}
+
+function ensureLocalUploadsDir() {
+  if (!fs.existsSync(LOCAL_UPLOADS_DIR)) {
+    fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
+  }
 }
 
 function normalizeKey(relKey: string): string {
@@ -33,8 +58,19 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
+
+  // LOCAL DEV FALLBACK: write to local disk when Forge is not configured
+  if (!isForgeConfigured()) {
+    ensureLocalUploadsDir();
+    const filePath = path.join(LOCAL_UPLOADS_DIR, key.replace(/\//g, "_"));
+    const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+    fs.writeFileSync(filePath, buffer);
+    console.log(`[Storage] Local fallback: saved ${key} to ${filePath}`);
+    return { key, url: `/local-uploads/${key}` };
+  }
+
+  const { forgeUrl, forgeKey } = getForgeConfig();
 
   // 1. Get presigned PUT URL from Forge
   const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
@@ -73,12 +109,21 @@ export async function storagePut(
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
+  if (!isForgeConfigured()) {
+    return { key, url: `/local-uploads/${key}` };
+  }
   return { key, url: `/manus-storage/${key}` };
 }
 
 export async function storageGetSignedUrl(relKey: string): Promise<string> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
   const key = normalizeKey(relKey);
+
+  // LOCAL DEV FALLBACK: return a direct local URL
+  if (!isForgeConfigured()) {
+    return `/local-uploads/${key}`;
+  }
+
+  const { forgeUrl, forgeKey } = getForgeConfig();
 
   const getUrl = new URL("v1/storage/presign/get", forgeUrl + "/");
   getUrl.searchParams.set("path", key);

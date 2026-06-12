@@ -7,6 +7,7 @@
  *                                 send emails, write audit event
  */
 import type { Express, Request, Response } from "express";
+import { ENV } from "./_core/env";
 import { constructWebhookEvent } from "./lib/stripe";
 import { getDb } from "./db";
 import {
@@ -175,7 +176,7 @@ async function handleWebhookEvent(event: import("stripe").Stripe.Event): Promise
     const moveOutStr = request.moveOutDate instanceof Date
       ? request.moveOutDate.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
       : String(request.moveOutDate);
-    const appBase = process.env.VITE_OAUTH_PORTAL_URL ?? "https://leasemate.com.au";
+    const appBase = ENV.appUrl;
 
     if (providerUser?.email) {
       sendProviderPaymentConfirmed({

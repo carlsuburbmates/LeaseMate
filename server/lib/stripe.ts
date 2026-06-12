@@ -2,11 +2,43 @@
  * LeaseMate Stripe Integration
  * Sandbox mode — all prices in AUD, test keys only.
  * Switch to live keys via Settings → Payment after Stripe KYC.
+ *
+ * LOCAL DEV: Stripe is lazily initialised so the server starts without
+ * STRIPE_SECRET_KEY set. Payment routes will throw a clear error if called
+ * without the key, rather than crashing the whole process at startup.
  */
 import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2026-05-27.dahlia",
+let _stripeInstance: Stripe | null = null;
+
+/**
+ * Returns the Stripe client. Lazily initialised so the server can start
+ * without STRIPE_SECRET_KEY (useful for local dev without Stripe).
+ * Throws a descriptive error if called when the key is missing.
+ */
+export function getStripe(): Stripe {
+  if (_stripeInstance) return _stripeInstance;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error(
+      "STRIPE_SECRET_KEY is not set. Add it to your .env file to enable Stripe payments. " +
+        "See LOCAL_SETUP.md for instructions."
+    );
+  }
+  _stripeInstance = new Stripe(key, {
+    apiVersion: "2026-05-27.dahlia" as any,
+  });
+  return _stripeInstance;
+}
+
+/**
+ * Stripe client proxy — lazily resolved on first use.
+ * Use getStripe() directly in new code for clarity.
+ */
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    return (getStripe() as any)[prop];
+  },
 });
 
 /**

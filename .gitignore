@@ -114,3 +114,9 @@ client/public/__manus__/version.json
 .project-config.json
 .vercel
 .env*
+
+# Local dev storage fallback (files uploaded when Forge is not configured)
+uploads/
+
+# Manus debug log collector output
+.manus-logs/

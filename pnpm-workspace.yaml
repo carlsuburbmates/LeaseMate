@@ -1,0 +1,9 @@
+# pnpm workspace configuration
+# This is a single-package repo, so packages points to the root.
+packages:
+  - .
+
+# pnpm v10+ overrides (moved from package.json "pnpm.overrides" field)
+# Note: patchedDependencies must remain in package.json "pnpm" field for pnpm v10.
+overrides:
+  tailwindcss>nanoid: "3.3.7"
