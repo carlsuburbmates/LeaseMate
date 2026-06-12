@@ -2,7 +2,9 @@
 
 **Version:** 1.0 · **Environment:** Sandbox / Test  
 **Prepared by:** Manus AI · **Date:** June 2026  
-**App URL:** https://3000-iwvxc2hel4aone1eizzot-9dbc0779.sg1.manus.computer *(dev)*
+**App URL (Manus dev):** https://3000-iwvxc2hel4aone1eizzot-9dbc0779.sg1.manus.computer  
+**Vercel URL:** https://lease-mate-carlitos-projects-a62ff78f.vercel.app *(disable deployment protection to make public)*  
+**GitHub:** https://github.com/carlsuburbmates/LeaseMate
 
 ---
 
@@ -203,7 +205,7 @@ The following emails are triggered automatically. Verify receipt in the test ema
 | OAuth login | ✅ Fixed | Role enum was missing `customer`/`provider`/`operator` — patched |
 | Stripe payments | ✅ Sandbox | Use test card 4242 4242 4242 4242 |
 | Resend emails | ✅ Active | Validated API key; emails send to real addresses |
-| Vercel deployment | ⚠️ Not connected | Manus provides built-in hosting; click **Publish** in the UI |
+| Vercel deployment | ✅ READY | Deployed at lease-mate-carlitos-projects-a62ff78f.vercel.app — disable deployment protection in Vercel dashboard to make public; add env vars in Vercel Settings |
 | Provider timeout automation | 🔄 Scheduled | Heartbeat job runs every 24h |
 | Suburb data | ✅ 151 suburbs | Greater Melbourne seed data loaded |
 
