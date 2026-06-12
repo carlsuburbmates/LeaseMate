@@ -114,6 +114,7 @@ client/public/__manus__/version.json
 .project-config.json
 .vercel
 .env*
+!.env.example
 
 # Local dev storage fallback (files uploaded when Forge is not configured)
 uploads/
