@@ -117,12 +117,19 @@
 - [ ] Seed one exception (EX-03 provider timeout) for ops testing — deferred to manual UAT
 
 ## Phase 15: Deployment
-- [ ] Vercel: Connect GitHub repo carlsuburbmates/LeaseMate to Vercel (note: Manus provides built-in hosting — click Publish button in UI)
-- [ ] Configure all environment variables in Vercel if deploying externally
-- [ ] Deploy and verify production URL
+- [x] Vercel: Connected GitHub repo carlsuburbmates/LeaseMate to Vercel (project: lease-mate, team: Carlito's projects)
+- [x] Add vercel.json + api/index.ts serverless adapter to fix Next.js framework mismatch
+- [x] Deployment state: READY (dpl_BgLKoCDQGHtKYpDutGN96JaVDE8Y) — deployment protection must be disabled in Vercel dashboard to make public
+- [x] All env vars managed via Manus webdev secrets (not duplicated in Vercel — user must add them in Vercel Settings → Environment Variables for production)
 
 ## Phase 16: UAT Guide
 - [x] Document all test accounts, credentials, and test card numbers
 - [x] Document all seeded test data and expected states
 - [x] Document step-by-step UAT flows for each role
 - [x] UAT-GUIDE.md written and committed
+
+## Phase 17: Vercel Production Readiness (Post-UAT)
+- [ ] Disable Vercel deployment protection in dashboard (Settings → Deployment Protection → None) to make URL publicly accessible
+- [ ] Add all required env vars in Vercel Settings → Environment Variables (DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, VITE_STRIPE_PUBLISHABLE_KEY, RESEND_API_KEY, BUILT_IN_FORGE_API_KEY, BUILT_IN_FORGE_API_URL, VITE_APP_ID, OAUTH_SERVER_URL, VITE_OAUTH_PORTAL_URL, OWNER_OPEN_ID, OWNER_NAME)
+- [ ] Verify Vercel production URL loads the app after protection is disabled
+- [ ] Note: Manus built-in hosting (Publish button) is the recommended path — Vercel requires manual env var setup and has cold-start latency on free tier
