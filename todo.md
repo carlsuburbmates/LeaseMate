@@ -79,3 +79,50 @@
 ## Phase 10: Polish & Delivery
 - [x] robots.txt — disallow /ops and /provider
 - [x] Checkpoint and delivery
+
+## Phase 11: Stripe Sandbox Integration
+- [x] Add Stripe feature via webdev_add_feature
+- [x] Configure STRIPE_SECRET_KEY (sandbox) and STRIPE_PUBLISHABLE_KEY
+- [x] Implement Stripe Checkout Session creation for provider introduction fee
+- [x] Implement Stripe webhook handler (/api/stripe/webhook) for payment confirmation
+- [x] Trigger customer details release after payment.succeeded webhook
+- [x] Seed Stripe test products (6 introduction fee prices, one per category)
+- [x] Verify sandbox payment flow end-to-end with test card 4242 4242 4242 4242
+
+## Phase 12: Resend Email Templates
+- [x] Configure RESEND_API_KEY and sending domain
+- [x] Template 1: Provider invitation email (polished, with accept/decline buttons)
+- [x] Template 2: Customer request confirmation email
+- [x] Template 3: Provider acceptance confirmation + payment link
+- [x] Template 4: Customer details release to provider
+- [x] Template 5: Provider timeout warning (24h before deadline)
+- [x] Template 6: Operator critical exception alert
+- [x] Template 7: Refund approved notification to provider
+- [x] Template 8: Refund rejected notification to provider
+- [x] Wire all templates into tRPC procedures at correct trigger points
+
+## Phase 13: Responsiveness Audit
+- [x] Public pages (Home, How It Works, Services, For Providers, FAQ) — mobile/tablet
+- [x] Customer intake flow (MoveOutCart, RequestStatus) — mobile/tablet
+- [x] Provider dashboard (all 4 pages) — mobile/tablet
+- [x] Ops Center (all 6 pages) — shared OpsLayout with mobile hamburger menu
+- [x] Navigation — mobile hamburger menu
+
+## Phase 14: Test Data Seeding
+- [x] Customer test account (with submitted move request)
+- [x] Provider test account (with products, pending opportunity)
+- [x] Operator test account (admin role)
+- [x] Seed realistic move request with items in multiple categories
+- [x] Seed provider invitation in pending state
+- [ ] Seed one exception (EX-03 provider timeout) for ops testing — deferred to manual UAT
+
+## Phase 15: Deployment
+- [ ] Vercel: Connect GitHub repo carlsuburbmates/LeaseMate to Vercel (note: Manus provides built-in hosting — click Publish button in UI)
+- [ ] Configure all environment variables in Vercel if deploying externally
+- [ ] Deploy and verify production URL
+
+## Phase 16: UAT Guide
+- [x] Document all test accounts, credentials, and test card numbers
+- [x] Document all seeded test data and expected states
+- [x] Document step-by-step UAT flows for each role
+- [x] UAT-GUIDE.md written and committed

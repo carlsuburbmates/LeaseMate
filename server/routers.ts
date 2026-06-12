@@ -52,6 +52,13 @@ import {
   createMoveRequestItem,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
+import { createIntroductionFeeCheckout } from "./lib/stripe";
+import {
+  sendCustomerRequestReceived,
+  sendProviderNewOpportunity,
+  sendProviderRefundApproved,
+  sendOperatorExceptionAlert,
+} from "./lib/resend";
 
 // ─── Role guards ──────────────────────────────────────────────────────────
 
@@ -158,6 +165,22 @@ const intakeRouter = router({
       await updateMoveRequest(input.requestId, { status: "submitted", submittedAt: new Date() });
       await createAuditEvent({ eventType: "move_request.submitted", entityType: "move_request", entityId: input.requestId, actorType: "customer", actorId: ctx.user.id, description: "Customer submitted move request" });
       await notifyOwner({ title: "New Cart Submission", content: `Move request #${input.requestId} submitted by customer ${ctx.user.name ?? ctx.user.email}` });
+      // Send confirmation email to customer
+      if (ctx.user.email) {
+        const reqData = await getMoveRequestById(input.requestId);
+        const items = await getMoveRequestItems(input.requestId);
+        sendCustomerRequestReceived({
+          customerName: ctx.user.name ?? "there",
+          customerEmail: ctx.user.email,
+          requestId: input.requestId,
+          suburb: reqData?.propertySuburb ?? "",
+          moveOutDate: reqData?.moveOutDate instanceof Date
+            ? reqData.moveOutDate.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
+            : String(reqData?.moveOutDate ?? ""),
+          serviceCount: items.length,
+          dashboardUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? "https://leasemate.com.au"}/customer/requests/${input.requestId}`,
+        }).catch(() => {});
+      }
       return { success: true };
     }),
 
@@ -378,6 +401,46 @@ const providerRouter = router({
     return getProviderBillingHistory(profile.id);
   }),
 
+  createCheckoutSession: providerProcedure
+    .input(z.object({
+      invitationId: z.number(),
+      origin: z.string().url(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const inv = await getInvitationById(input.invitationId);
+      if (!inv) throw new TRPCError({ code: "NOT_FOUND", message: "Invitation not found." });
+      const profile = await getProviderProfile(ctx.user.id);
+      if (!profile || inv.providerId !== profile.id) throw new TRPCError({ code: "FORBIDDEN" });
+      if (inv.status !== "accepted") throw new TRPCError({ code: "BAD_REQUEST", message: "Invitation must be accepted before payment." });
+      // Check if already paid
+      const existingFee = await getFeeByInvitation(input.invitationId);
+      if (existingFee?.status === "paid") throw new TRPCError({ code: "BAD_REQUEST", message: "Introduction fee already paid for this invitation." });
+      // Get the service category slug from the move request item
+      const item = await getMoveRequestItemById(inv.moveRequestItemId);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Move request item not found." });
+      // Get category slug from service categories
+      const categories = await getServiceCategories();
+      const category = categories.find(c => c.id === item.categoryId);
+      if (!category) throw new TRPCError({ code: "NOT_FOUND", message: "Service category not found." });
+      const { url, sessionId } = await createIntroductionFeeCheckout({
+        invitationId: input.invitationId,
+        categorySlug: category.slug,
+        providerEmail: ctx.user.email ?? profile.contactEmail ?? "",
+        providerName: ctx.user.name ?? profile.businessName,
+        providerId: profile.id,
+        origin: input.origin,
+      });
+      await createAuditEvent({
+        eventType: "payment.checkout_created",
+        entityType: "provider_invitation",
+        entityId: input.invitationId,
+        actorType: "provider",
+        actorId: ctx.user.id,
+        description: `Checkout session created for invitation #${input.invitationId} (${category.slug})`,
+      });
+      return { url, sessionId };
+    }),
+
   flagJob: providerProcedure
     .input(z.object({ invitationId: z.number(), reason: z.string().min(10), contactAttempts: z.number().int().min(3, "You must log at least 3 contact attempts before flagging a job.") }))
     .mutation(async ({ ctx, input }) => {
@@ -473,6 +536,20 @@ const opsRouter = router({
       }
       await updateException(input.exceptionId, { status: "resolved", operatorNotes: input.notes, resolvedBy: ctx.user.id, resolvedAt: new Date() });
       await createAuditEvent({ eventType: "refund.approved", entityType: "introduction_fee", entityId: fee.id, actorType: "operator", actorId: ctx.user.id, description: `Operator approved refund for fee #${fee.id}. ${input.notes ?? ""}` });
+      // Send refund approved email to provider
+      const providerUser = await getUserById(fee.providerId);
+      if (providerUser?.email) {
+        sendProviderRefundApproved({
+          providerName: providerUser.name ?? "Provider",
+          providerEmail: providerUser.email,
+          invitationId: input.invitationId,
+          serviceCategory: "Introduction Fee",
+          suburb: "",
+          refundAmount: `$${parseFloat(fee.amount).toFixed(2)}`,
+          refundReason: input.notes ?? "Approved by operator.",
+          billingUrl: `${process.env.VITE_OAUTH_PORTAL_URL ?? "https://leasemate.com.au"}/provider/billing`,
+        }).catch(() => {});
+      }
       return { success: true };
     }),
 

@@ -1,18 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
 import { toast } from "sonner";
-import { LayoutDashboard, FileText, Users, Activity, AlertTriangle, PauseCircle, PlayCircle } from "lucide-react";
-
-const OPS_NAV = [
-  { href: "/ops", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/ops/requests", label: "Requests", icon: FileText },
-  { href: "/ops/exceptions", label: "Exceptions", icon: AlertTriangle },
-  { href: "/ops/providers", label: "Providers", icon: Users },
-  { href: "/ops/audit", label: "Audit Log", icon: Activity },
-  { href: "/ops/health", label: "System Health", icon: Activity },
-];
+import { PauseCircle, PlayCircle } from "lucide-react";
+import { OpsLayout } from "./OpsCenter";
 
 export default function OpsProviders() {
   const { isAuthenticated } = useAuth();
@@ -28,44 +19,25 @@ export default function OpsProviders() {
   });
 
   return (
-    <div className="min-h-screen bg-[#1C1C1E] text-white flex">
-      <div className="w-56 flex-shrink-0 border-r border-white/5 p-4">
-        <div className="mb-8 px-2">
-          <div className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-1">LeaseMate</div>
-          <div className="text-sm font-semibold text-white/80">Operations</div>
-        </div>
-        <nav className="space-y-1">
-          {OPS_NAV.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
-                item.href === "/ops/providers" ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80 hover:bg-white/5"
-              }`}>
-                <item.icon size={14} />
-                {item.label}
-              </div>
-            </Link>
-          ))}
-        </nav>
+    <OpsLayout activeHref="/ops/providers">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-xl font-semibold text-white">Provider Management</h1>
+        <p className="text-sm text-white/40 mt-1">All registered providers. Pause or reactivate as needed.</p>
       </div>
 
-      <div className="flex-1 p-8 overflow-auto">
-        <div className="mb-8">
-          <h1 className="text-xl font-semibold text-white">Provider Management</h1>
-          <p className="text-sm text-white/40 mt-1">All registered providers. Pause or reactivate as needed.</p>
+      {isLoading ? (
+        <div className="animate-pulse space-y-2">
+          {[1,2,3].map(i => <div key={i} className="h-16 bg-white/5 rounded-lg" />)}
         </div>
-
-        {isLoading ? (
-          <div className="animate-pulse space-y-2">
-            {[1,2,3].map(i => <div key={i} className="h-16 bg-white/5 rounded-lg" />)}
-          </div>
-        ) : (
-          <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
-            <table className="w-full text-sm">
+      ) : (
+        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr className="border-b border-white/10">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Business</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Suburb</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Max Jobs/Wk</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Max/Wk</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -113,12 +85,12 @@ export default function OpsProviders() {
                 ))}
               </tbody>
             </table>
-            {(!providers || (providers as any[]).length === 0) && (
-              <div className="py-12 text-center text-white/30 text-sm">No providers registered yet.</div>
-            )}
           </div>
-        )}
-      </div>
-    </div>
+          {(!providers || (providers as any[]).length === 0) && (
+            <div className="py-12 text-center text-white/30 text-sm">No providers registered yet.</div>
+          )}
+        </div>
+      )}
+    </OpsLayout>
   );
 }

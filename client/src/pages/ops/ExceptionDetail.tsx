@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useParams } from "wouter";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { OpsLayout } from "./OpsCenter";
 
 const SEVERITY_COLOR: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -36,17 +37,21 @@ export default function OpsExceptionDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#1C1C1E] flex items-center justify-center">
-        <div className="text-white/40 text-sm">Loading…</div>
-      </div>
+      <OpsLayout activeHref="/ops/exceptions">
+        <div className="flex items-center justify-center py-24">
+          <div className="text-white/40 text-sm">Loading…</div>
+        </div>
+      </OpsLayout>
     );
   }
 
   if (!ex) {
     return (
-      <div className="min-h-screen bg-[#1C1C1E] flex items-center justify-center">
-        <div className="text-white/40 text-sm">Exception not found.</div>
-      </div>
+      <OpsLayout activeHref="/ops/exceptions">
+        <div className="flex items-center justify-center py-24">
+          <div className="text-white/40 text-sm">Exception not found.</div>
+        </div>
+      </OpsLayout>
     );
   }
 
@@ -54,11 +59,11 @@ export default function OpsExceptionDetail() {
   const exMeta = (meta as any)?.[e.code];
 
   return (
-    <div className="min-h-screen bg-[#1C1C1E] text-white p-8">
+    <OpsLayout activeHref="/ops/exceptions">
       <div className="max-w-2xl mx-auto">
-        <Link href="/ops">
-          <button className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 mb-8 transition-colors">
-            <ArrowLeft size={14} /> Back to Operations
+        <Link href="/ops/exceptions">
+          <button className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 mb-6 md:mb-8 transition-colors">
+            <ArrowLeft size={14} /> Back to Exceptions
           </button>
         </Link>
 
@@ -67,14 +72,14 @@ export default function OpsExceptionDetail() {
             <div className="text-xs font-mono text-white/30 mb-1">{e.code}</div>
             <h1 className="text-xl font-semibold text-white">{exMeta?.name ?? e.code}</h1>
           </div>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded border ${SEVERITY_COLOR[e.severity] ?? "bg-white/10 text-white/60 border-white/10"}`}>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded border flex-shrink-0 ${SEVERITY_COLOR[e.severity] ?? "bg-white/10 text-white/60 border-white/10"}`}>
             {e.severity}
           </span>
         </div>
 
         <div className="space-y-4 mb-6">
           <div className="bg-white/5 rounded-xl border border-white/10 p-5">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="text-white/30 text-xs mb-1">Affected Party</div>
                 <div className="text-white/80">{e.affectedParty ?? exMeta?.affectedParty ?? "—"}</div>
@@ -168,6 +173,6 @@ export default function OpsExceptionDetail() {
           </div>
         )}
       </div>
-    </div>
+    </OpsLayout>
   );
 }
