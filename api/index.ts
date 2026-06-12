@@ -1,8 +1,8 @@
 /**
  * Vercel serverless function entry point.
- * Wraps the Express app for Vercel's Node.js runtime.
+ * Vercel's @vercel/node builder compiles this TypeScript file directly
+ * and resolves all imports from the project source tree.
  */
-import "dotenv/config";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "../server/_core/oauth";
@@ -10,10 +10,6 @@ import { registerStorageProxy } from "../server/_core/storageProxy";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 import { registerStripeWebhook } from "../server/stripeWebhook";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
@@ -35,17 +31,14 @@ app.use(
   })
 );
 
-// Serve static files from the Vite build output
-const distPublic = path.resolve(__dirname, "../dist/public");
-app.use(express.static(distPublic));
-
-// SPA fallback — all non-API routes serve index.html
+// SPA fallback — all non-API routes return a simple message
+// (static files are served by Vercel's CDN from outputDirectory)
 app.get("*", (req, res) => {
-  if (req.path.startsWith("/api/")) {
+  if (!req.path.startsWith("/api/") && !req.path.startsWith("/manus-storage/")) {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.sendFile(path.join(distPublic, "index.html"));
+  res.status(404).json({ error: "API route not found" });
 });
 
 export default app;

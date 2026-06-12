@@ -11,12 +11,12 @@
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index"
+      "source": "/api/:path*",
+      "destination": "/api/index.ts"
     },
     {
-      "source": "/manus-storage/(.*)",
-      "destination": "/api/index"
+      "source": "/manus-storage/:path*",
+      "destination": "/api/index.ts"
     }
   ]
 }
