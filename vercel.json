@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "buildCommand": "pnpm run build:vercel",
   "installCommand": "pnpm install",
@@ -18,6 +19,12 @@
     {
       "source": "/manus-storage/:path*",
       "destination": "/api/index.ts"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/jobs/stale-request-cleanup",
+      "schedule": "0 0 * * *"
     }
   ]
 }

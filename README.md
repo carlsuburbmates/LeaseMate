@@ -1,6 +1,6 @@
-# Web App Template (tRPC + Manus Auth + Database)
+# LeaseMate (Local-First tRPC App)
 
-This template gives you a React 19 + Tailwind 4 + Express 4 + tRPC 11 stack with Manus OAuth already wired. Procedures are your contracts, types flow end to end, and authentication "just works".
+LeaseMate is a React 19 + Tailwind 4 + Express 4 + tRPC 11 application that has been migrated to a local-first workflow. The codebase still supports the older Manus OAuth path when `AUTH_MODE=manus`, but the default development path is local auth plus standard infrastructure.
 
 ---
 
@@ -8,7 +8,7 @@ This template gives you a React 19 + Tailwind 4 + Express 4 + tRPC 11 stack with
 
 - **tRPC-first:** define procedures in `server/routers.ts`, consume them with `trpc.*` hooks.
 - **Superjson out of the box:** return Drizzle rows directly—`Date` stays a `Date`.
-- **Auth baked in:** `/api/oauth/callback` handles Manus OAuth, `protectedProcedure` injects `ctx.user`.
+- **Auth baked in:** local `/login` is the default path, and `protectedProcedure` injects `ctx.user`.
 - **Gateway-ready:** all RPC traffic is under `/api/trpc`, making it easy to route at the edge.
 
 ---
@@ -37,7 +37,7 @@ client/src/lib/trpc.ts → tRPC client binding
 client/src/pages/ → Feature UI that calls trpc hooks
 ```
 
-Framework plumbing (OAuth, context, Vite bridge) lives under `server/_core`.
+Framework plumbing (auth/context, job routes, Vite bridge) lives under `server/_core`.
 
 ---
 
@@ -82,26 +82,27 @@ Files in `client/public` are available at the root of your site—reference them
 
 ## Authentication Flow
 
-- Manus OAuth completes at `/api/oauth/callback` and drops a session cookie.
+- Local development uses `AUTH_MODE=local` and signs in through `/login`.
 - Each request to `/api/trpc` builds context via `server/_core/context.ts`, making the current user available as `ctx.user`.
 - Wrap protected logic in `protectedProcedure`; public access uses `publicProcedure`.
 - Frontend reads auth state with `trpc.auth.me.useQuery()` and invokes `trpc.auth.logout.useMutation()`—no cookie plumbing required.
+- If you explicitly switch to `AUTH_MODE=manus`, the Manus OAuth callback at `/api/oauth/callback` is enabled again.
 
 ---
 
 ## Environment Variables
 
-Available pre-defined system envs:
-- `DATABASE_URL`: MySQL/TiDB connection string
+Primary envs:
+- `DATABASE_URL`: MySQL connection string
 - `JWT_SECRET`: Session cookie signing secret
-- `VITE_APP_ID`: Manus OAuth application ID
-- `OAUTH_SERVER_URL`: Manus OAuth backend base URL
-- `VITE_OAUTH_PORTAL_URL`: Manus login portal URL (frontend)
-- `OWNER_OPEN_ID`, `OWNER_NAME`: Owner's info
-- `BUILT_IN_FORGE_API_URL`: Manus built-in apis (includes llm, storage, data_api, notification, etc...)
-- `BUILT_IN_FORGE_API_KEY`: Bearer token used by Manus built-in apis (server-side)
-- `VITE_FRONTEND_FORGE_API_KEY`: Bearer token for frontend access to Manus built-in apis
-- `VITE_FRONTEND_FORGE_API_URL`: Manus built-in apis URL for frontend
+- `AUTH_MODE` / `VITE_AUTH_MODE`: `local` by default, optional `manus`
+- `APP_URL`: Public base URL for links and queued job callbacks
+- `OWNER_EMAIL`: Fallback destination for owner/operator alerts
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`: Stripe integration
+- `RESEND_API_KEY`: Email delivery
+- `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`: Durable delayed jobs
+- `CRON_SECRET`: Protects the Vercel cron endpoint for stale-request cleanup
+- `INTERNAL_JOB_SECRET`: Optional override for internal queued job callbacks
 
 Do not edit these directly in code or commit `.env` files.
 The envs above are system envs, when use env in website code, refer `server/_core/env.ts` for available list.

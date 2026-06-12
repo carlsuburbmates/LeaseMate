@@ -1,10 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { ENV } from "./_core/env";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
+import { nanoid } from "nanoid";
 import {
   getAllSuburbs,
   searchSuburbs,
@@ -47,12 +49,17 @@ import {
   flagUser,
   setUserRole,
   getUserById,
+  getUserByOpenId,
+  getUserByEmail,
   getMoveRequestItemById,
   getCustomerRelease,
   getUserById as getUserForRelease,
   createMoveRequestItem,
+  listUsers,
+  upsertUser,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
+import { notifyOperatorCriticalException, schedulePaymentDeadlineCheck } from "./lib/qstash";
 import { createIntroductionFeeCheckout } from "./lib/stripe";
 import {
   sendCustomerRequestReceived,
@@ -118,6 +125,8 @@ const EXCEPTION_META: Record<string, { name: string; affectedParty: string; seve
   "EX-12": { name: "Communication Failure", affectedParty: "Provider or Customer", severity: "warning", prevention: "Resend delivery webhooks auto-retry. Verify email at onboarding.", resolution: "Manually resend the failed email. Flag as EX-10 if address is invalid." },
   "EX-13": { name: "Provider Refund Request", affectedParty: "Provider + Customer", severity: "warning", prevention: "Require 3 documented contact attempts before Flag Issue button activates.", resolution: "Verify claim against audit log. Approve refund + flag customer account, or reject with explanation." },
 };
+
+const LOCAL_AUTH_ROLES = ["customer", "provider", "operator", "admin"] as const;
 
 // ─── Routers ──────────────────────────────────────────────────────────────
 
@@ -381,6 +390,7 @@ const providerRouter = router({
       if (inv.status !== "pending") throw new TRPCError({ code: "BAD_REQUEST", message: "Invitation is no longer pending." });
       await updateInvitation(input.invitationId, { status: "accepted", respondedAt: new Date() });
       await createAuditEvent({ eventType: "invitation.accepted", entityType: "provider_invitation", entityId: input.invitationId, actorType: "provider", actorId: ctx.user.id, description: `Provider ${profile.businessName} accepted invitation #${input.invitationId}` });
+      await schedulePaymentDeadlineCheck(input.invitationId);
       return { success: true };
     }),
 
@@ -619,6 +629,9 @@ const opsRouter = router({
         entityId: 0,
         status: "open",
       });
+      if (meta.severity === "critical") {
+        await notifyOperatorCriticalException(Number((result as any).insertId));
+      }
       await notifyOwner({ title: `Exception Created: ${input.code}`, content: `Operator created ${input.code} (${meta.name}): ${input.description}` });
       return { id: Number((result as any).insertId) };
     }),
@@ -630,6 +643,77 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    localUsers: publicProcedure.query(async () => {
+      if (ENV.authMode !== "local") return [];
+      const users = await listUsers(12);
+      return users.map(user => ({
+        id: user.id,
+        openId: user.openId,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      }));
+    }),
+    localLogin: publicProcedure
+      .input(z.object({
+        email: z.string().email().optional(),
+        openId: z.string().min(3).optional(),
+        name: z.string().min(1).max(100).optional(),
+        role: z.enum(LOCAL_AUTH_ROLES).default("customer"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ENV.authMode !== "local") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Local login is disabled." });
+        }
+
+        const normalizedEmail = input.email?.trim().toLowerCase();
+        const normalizedOpenId = input.openId?.trim();
+
+        let user = normalizedOpenId
+          ? await getUserByOpenId(normalizedOpenId)
+          : normalizedEmail
+            ? await getUserByEmail(normalizedEmail)
+            : undefined;
+
+        if (!user) {
+          const role = input.role;
+          const openId = normalizedOpenId ?? `local_${role}_${nanoid(10)}`;
+          const name = input.name?.trim() || normalizedEmail?.split("@")[0] || `Local ${role}`;
+          await upsertUser({
+            openId,
+            name,
+            email: normalizedEmail ?? null,
+            loginMethod: "local",
+            role,
+            lastSignedIn: new Date(),
+          });
+          user = await getUserByOpenId(openId);
+        } else if (user.role !== input.role) {
+          await setUserRole(user.id, input.role);
+          user = await getUserById(user.id);
+        }
+
+        if (!user) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create local session user." });
+        }
+
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name ?? normalizedEmail ?? user.openId,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, cookieOptions);
+
+        return {
+          success: true,
+          user: {
+            id: user.id,
+            openId: user.openId,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          },
+        } as const;
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

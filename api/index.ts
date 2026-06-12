@@ -5,6 +5,7 @@
  */
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { registerJobRoutes } from "../server/_core/jobs";
 import { registerOAuthRoutes } from "../server/_core/oauth";
 import { registerStorageProxy } from "../server/_core/storageProxy";
 import { appRouter } from "../server/routers";
@@ -15,6 +16,7 @@ const app = express();
 
 // ⚠️ Stripe webhook MUST be registered BEFORE express.json()
 registerStripeWebhook(app);
+registerJobRoutes(app);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));

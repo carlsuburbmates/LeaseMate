@@ -85,6 +85,19 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0];
+}
+
+export async function listUsers(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).orderBy(desc(users.lastSignedIn), desc(users.createdAt)).limit(limit);
+}
+
 export async function setUserRole(userId: number, role: "customer" | "provider" | "operator" | "admin") {
   const db = await getDb();
   if (!db) return;

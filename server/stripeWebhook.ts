@@ -12,7 +12,6 @@ import { constructWebhookEvent } from "./lib/stripe";
 import { getDb } from "./db";
 import {
   providerInvitations,
-  customerReleases,
   introductionFees,
   auditEvents,
   moveRequestItems,
@@ -21,6 +20,7 @@ import {
 } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
+import { triggerCustomerDetailsRelease } from "./lib/qstash";
 import {
   sendProviderPaymentConfirmed,
   sendCustomerProviderMatched,
@@ -148,15 +148,8 @@ async function handleWebhookEvent(event: import("stripe").Stripe.Event): Promise
       return;
     }
 
-    // 5. Create customer_releases record — this is the address unlock
-    await db.insert(customerReleases).values({
-      introductionFeeId: fee.id,
-      moveRequestItemId: invitation.moveRequestItemId,
-      providerId,
-      customerId: request.customerId,
-      status: "released",
-      releasedAt: new Date(),
-    });
+    // 5. Release customer details through the shared automation path
+    await triggerCustomerDetailsRelease(invitationId);
 
     // 6. Fetch provider and customer user records for emails
     const [providerUser] = await db

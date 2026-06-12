@@ -11,7 +11,7 @@ The project now supports a practical local workflow:
 - Authentication has a local-first mode using `/login` and database-backed users.
 - Owner notifications no longer hard-fail when Manus Forge is absent.
 - The deleted Forge-only AI and maps scaffolding is no longer a migration blocker.
-- Background jobs in `server/lib/qstash.ts` now have a local in-process implementation and write to `automation_tasks`.
+- Background jobs in `server/lib/qstash.ts` now have a local in-process implementation, optional QStash-backed delayed delivery, and write to `automation_tasks`.
 
 ## What Works Locally Now
 
@@ -34,7 +34,7 @@ The project now supports a practical local workflow:
 - Customer detail release tasks
 - Stale draft cleanup
 
-These run locally while the server process is alive. They are suitable for development and audit work. They are not yet a durable production scheduler replacement.
+These run locally while the server process is alive. In production, delayed invitation jobs can publish through QStash and stale-request cleanup is exposed for Vercel Cron.
 
 ## Remaining Real Dependencies
 
@@ -57,14 +57,13 @@ These are the only meaningful external requirements left:
 ## Remaining Cleanup Work
 
 ### High priority
-1. Remove or refactor the remaining Manus-only OAuth callback path in [`server/_core/oauth.ts`](/Users/carlg/Documents/AI-Coding/Local-leasemate/server/_core/oauth.ts) if Manus auth is no longer needed.
-2. Decide whether production scheduling should remain local/in-process or move to a durable service such as QStash.
-3. Stand up a dedicated local or CI test database if you want DB-backed tests to run automatically instead of behind `RUN_DB_TESTS=1`.
+1. Stand up a dedicated local or CI test database if you want DB-backed tests to run automatically instead of behind `RUN_DB_TESTS=1`.
+2. Configure `QSTASH_TOKEN`, signing keys, and `CRON_SECRET` in the deployment environment if you want durable background execution in production.
+3. Remove the non-git export folder if you want one canonical working copy only.
 
 ### Medium priority
-1. Review old deployment docs and remove any instructions that still assume Forge or Manus-only services.
-2. Decide whether the non-git export folder should be retained as an archive or deleted to reduce workspace duplication.
-3. Add seed data and demo accounts that better match the intended operator, provider, and customer flows.
+1. Add seed data and demo accounts that better match the intended operator, provider, and customer flows.
+2. Decide whether to keep Manus auth support as a fallback mode long-term or delete it entirely once no longer needed.
 
 ## Recommended Local Workflow
 

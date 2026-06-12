@@ -3,6 +3,9 @@ import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
 
+const RUN_DB_TESTS = process.env.RUN_DB_TESTS === "1";
+const dbIt = RUN_DB_TESTS ? it : it.skip;
+
 // ─── Context factories ────────────────────────────────────────────────────────
 
 type AppRole = "user" | "admin" | "customer" | "provider" | "operator";
@@ -64,7 +67,7 @@ describe("auth.logout", () => {
 // ─── Reference data ───────────────────────────────────────────────────────────
 
 describe("reference.categories", () => {
-  it("is publicly accessible", async () => {
+  dbIt("is publicly accessible", async () => {
     const caller = appRouter.createCaller(makeAnonCtx());
     const categories = await caller.reference.categories() as any[];
     expect(Array.isArray(categories)).toBe(true);
@@ -72,7 +75,7 @@ describe("reference.categories", () => {
 });
 
 describe("reference.suburbs", () => {
-  it("is publicly accessible", async () => {
+  dbIt("is publicly accessible", async () => {
     const caller = appRouter.createCaller(makeAnonCtx());
     const suburbs = await caller.reference.suburbs() as any[];
     expect(Array.isArray(suburbs)).toBe(true);
@@ -182,15 +185,10 @@ describe("Role guards", () => {
     await expect(caller.ops.allProviders()).rejects.toThrow();
   });
 
-  it("allows admin to access ops dashboard (DB may be unavailable in test)", async () => {
+  dbIt("allows admin to access ops dashboard", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
-    try {
-      await caller.ops.dashboard();
-    } catch (err: any) {
-      // DB unavailable is acceptable in test env
-      expect(err.message).not.toContain("Operator access required");
-      expect(err.code).not.toBe("FORBIDDEN");
-    }
+    const result = await caller.ops.dashboard();
+    expect(result).toBeDefined();
   });
 });
 

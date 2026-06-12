@@ -12,6 +12,7 @@ import Services from "./pages/Services";
 import ForProviders from "./pages/ForProviders";
 import ProviderSignup from "./pages/ProviderSignup";
 import FAQ from "./pages/FAQ";
+import Login from "./pages/Login";
 
 // Customer pages
 import CustomerDashboard from "./pages/customer/Dashboard";
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/for-providers" component={ForProviders} />
       <Route path="/provider-signup" component={ProviderSignup} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/login" component={Login} />
 
       {/* Customer */}
       <Route path="/dashboard" component={CustomerDashboard} />

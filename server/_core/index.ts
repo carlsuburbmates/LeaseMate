@@ -4,6 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import path from "node:path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { registerJobRoutes } from "./jobs";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
@@ -36,6 +37,7 @@ async function startServer() {
 
   // ⚠️ Stripe webhook MUST be registered BEFORE express.json() so it receives the raw body
   registerStripeWebhook(app);
+  registerJobRoutes(app);
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

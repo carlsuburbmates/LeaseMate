@@ -38,11 +38,13 @@ export function getSessionCookieOptions(
   //     : shouldSetDomain
   //       ? hostname
   //       : undefined;
-
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    // Browsers reject SameSite=None cookies unless Secure=true. Local http://localhost
+    // development therefore needs a less strict value to keep auth functional.
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

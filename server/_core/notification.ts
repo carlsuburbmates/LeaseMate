@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
+import { FROM_ADDRESS } from "../lib/resend";
 
 export type NotificationPayload = {
   title: string;
@@ -22,6 +23,13 @@ const buildEndpointUrl = (baseUrl: string): string => {
     normalizedBase
   ).toString();
 };
+
+const buildOwnerEmailHtml = ({ title, content }: NotificationPayload) => `
+  <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px;">
+    <h1 style="font-size: 20px; margin-bottom: 12px;">${title}</h1>
+    <p style="font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${content}</p>
+  </div>
+`;
 
 const validatePayload = (input: NotificationPayload): NotificationPayload => {
   if (!isNonEmptyString(input.title)) {
@@ -68,18 +76,40 @@ export async function notifyOwner(
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
-  if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service URL is not configured.",
-    });
-  }
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+    if (ENV.resendApiKey && ENV.ownerEmail) {
+      try {
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${ENV.resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: FROM_ADDRESS,
+            to: [ENV.ownerEmail],
+            subject: title,
+            html: buildOwnerEmailHtml({ title, content }),
+          }),
+        });
 
-  if (!ENV.forgeApiKey) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service API key is not configured.",
-    });
+        if (response.ok) {
+          return true;
+        }
+
+        const detail = await response.text().catch(() => "");
+        console.warn(
+          `[Notification] Resend fallback failed (${response.status} ${response.statusText})${
+            detail ? `: ${detail}` : ""
+          }`
+        );
+      } catch (error) {
+        console.warn("[Notification] Resend fallback error:", error);
+      }
+    }
+
+    console.warn("[Notification] No owner notification backend configured.", { title, content });
+    return false;
   }
 
   const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
