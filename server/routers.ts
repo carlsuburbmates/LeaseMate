@@ -644,7 +644,6 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     localUsers: publicProcedure.query(async () => {
-      if (ENV.authMode !== "local") return [];
       const users = await listUsers(12);
       return users.map(user => ({
         id: user.id,
@@ -662,10 +661,6 @@ export const appRouter = router({
         role: z.enum(LOCAL_AUTH_ROLES).default("customer"),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ENV.authMode !== "local") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Local login is disabled." });
-        }
-
         const normalizedEmail = input.email?.trim().toLowerCase();
         const normalizedOpenId = input.openId?.trim();
 

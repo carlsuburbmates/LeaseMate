@@ -5,7 +5,6 @@ import net from "net";
 import path from "node:path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerJobRoutes } from "./jobs";
-import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -45,11 +44,10 @@ async function startServer() {
   registerStorageProxy(app);
 
   // LOCAL DEV: serve uploaded files from ./uploads/ at /local-uploads/*
-  // This is the fallback storage path used when BUILT_IN_FORGE_API_URL is not set.
+  // This is the fallback storage path used when S3-compatible storage is not configured.
   const localUploadsDir = path.resolve(process.cwd(), "uploads");
   app.use("/local-uploads", express.static(localUploadsDir));
 
-  registerOAuthRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

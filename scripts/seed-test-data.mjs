@@ -19,30 +19,28 @@ const conn = await mysql.createConnection(DB_URL);
 console.log("🌱 Seeding LeaseMate test data...\n");
 
 // ─── 1. Test Users ────────────────────────────────────────────────────────────
-// Note: In production, users are created via Manus OAuth.
-// These are pre-seeded with placeholder openIds for testing.
-// The operator will need to log in via OAuth to get a real session.
+// These are pre-seeded with stable openIds for local or shared test environments.
 
 const testUsers = [
   {
     openId: "test_customer_001",
     name: "Alex Chen",
     email: "alex.chen@test.leasemate.com.au",
-    loginMethod: "manus_oauth",
+    loginMethod: "local",
     role: "customer",
   },
   {
     openId: "test_provider_001",
     name: "Jordan Smith",
     email: "jordan.smith@test.leasemate.com.au",
-    loginMethod: "manus_oauth",
+    loginMethod: "local",
     role: "provider",
   },
   {
     openId: "test_operator_001",
     name: "LeaseMate Ops",
     email: "ops@test.leasemate.com.au",
-    loginMethod: "manus_oauth",
+    loginMethod: "local",
     role: "operator",
   },
 ];
@@ -173,8 +171,7 @@ console.log(`
 ║  Email:   alex.chen@test.leasemate.com.au                        ║
 ║  Role:    customer                                               ║
 ║  DB ID:   ${String(userIds["customer"]).padEnd(52)}║
-║  Login:   Via Manus OAuth (use any Manus account, then           ║
-║           ops can set role to 'customer' in DB)                  ║
+║  Login:   Open /login and sign in as Alex Chen                   ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  PROVIDER                                                        ║
 ║  Name:    Jordan Smith                                           ║
@@ -190,7 +187,7 @@ console.log(`
 ║  Email:   ops@test.leasemate.com.au                              ║
 ║  Role:    operator                                               ║
 ║  DB ID:   ${String(userIds["operator"]).padEnd(52)}║
-║  Login:   The Manus project owner auto-gets operator role        ║
+║  Login:   Open /login and sign in as LeaseMate Ops               ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  TEST DATA                                                       ║
 ║  Move Request ID: ${String(moveRequestId).padEnd(46)}║

@@ -60,9 +60,9 @@ The platform is designed to run in a fully automated state. The state machine, b
 
 For deep-dives into specific areas of the platform, refer to the following canonical documents:
 
-- **[AUTOMATION_PIPELINE.md](./AUTOMATION_PIPELINE.md)**: The definitive specification of the platform's automated state machine, QStash background jobs, and Exception handling matrix.
 - **[UAT-GUIDE.md](./UAT-GUIDE.md)**: Step-by-step user acceptance testing flows for all three user roles (Customer, Provider, Operator).
-- **[MIGRATION_PLAN.md](./MIGRATION_PLAN.md)**: The technical roadmap for decoupling the remaining proprietary platform integrations (Auth, Notifications, QStash).
+- **[MIGRATION_PLAN.md](./MIGRATION_PLAN.md)**: The current runtime status, external dependency checklist, and local development notes.
+- **Code paths**: `server/lib/qstash.ts`, `server/stripeWebhook.ts`, and `server/routers.ts` are the canonical automation and workflow implementation.
 
 ## 4. Build and Deployment
 
@@ -91,4 +91,4 @@ For a production-like environment, the intended runtime mix is:
 - **Delayed jobs**: QStash
 - **Daily cleanup**: Vercel Cron
 
-Storage now prefers remote S3-compatible object storage first, then falls back to the legacy Forge path, and only uses local `./uploads` when neither remote option is configured.
+Storage now prefers remote S3-compatible object storage first and only uses local `./uploads` when remote object storage is not configured.

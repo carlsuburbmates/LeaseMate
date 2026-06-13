@@ -14,16 +14,6 @@ const trimValue = (value: string): string => value.trim();
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
-const buildEndpointUrl = (baseUrl: string): string => {
-  const normalizedBase = baseUrl.endsWith("/")
-    ? baseUrl
-    : `${baseUrl}/`;
-  return new URL(
-    "webdevtoken.v1.WebDevService/SendNotification",
-    normalizedBase
-  ).toString();
-};
-
 const buildOwnerEmailHtml = ({ title, content }: NotificationPayload) => `
   <div style="font-family: Inter, Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px;">
     <h1 style="font-size: 20px; margin-bottom: 12px;">${title}</h1>
@@ -66,64 +56,33 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
 };
 
 /**
- * Dispatches a project-owner notification through the Manus Notification Service.
- * Returns `true` if the request was accepted, `false` when the upstream service
- * cannot be reached (callers can fall back to email/slack). Validation errors
- * bubble up as TRPC errors so callers can fix the payload.
+ * Dispatches an owner notification through Resend when configured.
+ * Returns `true` if the request was accepted. Validation errors bubble up as
+ * TRPC errors so callers can fix the payload.
  */
 export async function notifyOwner(
   payload: NotificationPayload
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
-  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-    if (ENV.resendApiKey && ENV.ownerEmail) {
-      try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${ENV.resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: FROM_ADDRESS,
-            to: [ENV.ownerEmail],
-            subject: title,
-            html: buildOwnerEmailHtml({ title, content }),
-          }),
-        });
-
-        if (response.ok) {
-          return true;
-        }
-
-        const detail = await response.text().catch(() => "");
-        console.warn(
-          `[Notification] Resend fallback failed (${response.status} ${response.statusText})${
-            detail ? `: ${detail}` : ""
-          }`
-        );
-      } catch (error) {
-        console.warn("[Notification] Resend fallback error:", error);
-      }
-    }
-
+  if (!ENV.resendApiKey || !ENV.ownerEmail) {
     console.warn("[Notification] No owner notification backend configured.", { title, content });
     return false;
   }
 
-  const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
-
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        accept: "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-        "content-type": "application/json",
-        "connect-protocol-version": "1",
+        Authorization: `Bearer ${ENV.resendApiKey}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ title, content }),
+      body: JSON.stringify({
+        from: FROM_ADDRESS,
+        to: [ENV.ownerEmail],
+        subject: title,
+        html: buildOwnerEmailHtml({ title, content }),
+      }),
     });
 
     if (!response.ok) {
@@ -138,7 +97,7 @@ export async function notifyOwner(
 
     return true;
   } catch (error) {
-    console.warn("[Notification] Error calling notification service:", error);
+    console.warn("[Notification] Resend error:", error);
     return false;
   }
 }

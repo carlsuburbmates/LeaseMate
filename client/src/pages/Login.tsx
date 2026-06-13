@@ -59,14 +59,14 @@ export default function Login() {
           <section className="rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
             <div className="mb-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-                Local Auth
+                LeaseMate Auth
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">
-                Sign in without Manus
+                Sign in
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-                This local login creates or reuses a user in your database and issues the same session
-                cookie format the app already understands.
+                Sign in by creating or reusing a database-backed user. The app issues the same
+                session cookie used across customer, provider, and ops flows.
               </p>
             </div>
 

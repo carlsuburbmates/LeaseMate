@@ -17,10 +17,6 @@
       "destination": "/api/index.ts"
     },
     {
-      "source": "/manus-storage/:path*",
-      "destination": "/api/index.ts"
-    },
-    {
       "source": "/storage/:path*",
       "destination": "/api/index.ts"
     }

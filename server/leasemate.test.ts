@@ -16,7 +16,7 @@ function makeUser(role: AppRole = "customer", id = 1) {
     openId: `test-user-${id}`,
     email: `test${id}@example.com`,
     name: `Test User ${id}`,
-    loginMethod: "manus",
+    loginMethod: "local",
     role: role as "user" | "admin",
     createdAt: new Date(),
     updatedAt: new Date(),
