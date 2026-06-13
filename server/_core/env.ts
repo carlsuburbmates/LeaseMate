@@ -24,6 +24,13 @@ export const ENV = {
   qstashToken: process.env.QSTASH_TOKEN ?? "",
   qstashCurrentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY ?? "",
   qstashNextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY ?? "",
+  storageBucket: process.env.S3_BUCKET ?? "",
+  storageRegion: process.env.S3_REGION ?? "auto",
+  storageEndpoint: process.env.S3_ENDPOINT ?? "",
+  storageAccessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
+  storageSecretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
+  storagePublicBaseUrl: process.env.S3_PUBLIC_BASE_URL ?? "",
+  storageForcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
   // APP_URL is the public base URL of the app (e.g. https://leasemate.com.au or http://localhost:3000).
   // Used for constructing absolute links in emails and webhooks.
   // Falls back to VITE_OAUTH_PORTAL_URL for backwards compatibility with Manus deployments.

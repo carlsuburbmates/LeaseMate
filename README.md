@@ -10,6 +10,7 @@ The project is a Vite + React + Express monolith managed by `pnpm`.
 - Node.js (v20+)
 - `pnpm` (v9+)
 - A running MySQL/MariaDB database (or cloud equivalent like TiDB/PlanetScale)
+- For launch-like file handling, a remote S3-compatible object store such as Cloudflare R2 or AWS S3
 
 ### Installation
 1. Clone the repository and install dependencies:
@@ -20,7 +21,7 @@ The project is a Vite + React + Express monolith managed by `pnpm`.
    ```bash
    cp .env.example .env
    ```
-   *Note: Fill in the required keys in `.env`, specifically `DATABASE_URL`.*
+   *Note: Fill in the required keys in `.env`, specifically `DATABASE_URL`. For launch-like storage, also configure the `S3_*` variables.*
 
 3. Push the database schema:
    ```bash
@@ -78,3 +79,16 @@ pnpm run start
 
 **Vercel Deployment:**
 The project is configured for Vercel deployment. Ensure your Vercel project is linked (`vercel link`) and push to the `main` branch to trigger a deployment. Environment variables must be configured in the Vercel dashboard.
+
+## 5. Launch-Like Integrations
+
+For a production-like environment, the intended runtime mix is:
+
+- **Database**: remote MySQL-compatible service
+- **File storage**: remote S3-compatible object storage via the `S3_*` env vars
+- **Payments**: Stripe
+- **Email**: Resend
+- **Delayed jobs**: QStash
+- **Daily cleanup**: Vercel Cron
+
+Storage now prefers remote S3-compatible object storage first, then falls back to the legacy Forge path, and only uses local `./uploads` when neither remote option is configured.

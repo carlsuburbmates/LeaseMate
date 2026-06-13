@@ -36,7 +36,11 @@ app.use(
 // SPA fallback — all non-API routes return a simple message
 // (static files are served by Vercel's CDN from outputDirectory)
 app.get("*", (req, res) => {
-  if (!req.path.startsWith("/api/") && !req.path.startsWith("/manus-storage/")) {
+  if (
+    !req.path.startsWith("/api/") &&
+    !req.path.startsWith("/manus-storage/") &&
+    !req.path.startsWith("/storage/")
+  ) {
     res.status(404).json({ error: "Not found" });
     return;
   }

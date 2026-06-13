@@ -12,6 +12,7 @@ The project now supports a practical local workflow:
 - Owner notifications no longer hard-fail when Manus Forge is absent.
 - The deleted Forge-only AI and maps scaffolding is no longer a migration blocker.
 - Background jobs in `server/lib/qstash.ts` now have a local in-process implementation, optional QStash-backed delayed delivery, and write to `automation_tasks`.
+- Storage now supports a proper S3-compatible remote backend for launch-like deployments.
 
 ## What Works Locally Now
 
@@ -53,6 +54,11 @@ These are the only meaningful external requirements left:
    - Optional
    - Enables transactional email and fallback owner alerts
    - Env vars: `RESEND_API_KEY`, `OWNER_EMAIL`
+
+4. **Object Storage**
+   - Recommended for launch-like file handling
+   - Supports S3-compatible providers such as Cloudflare R2 or AWS S3
+   - Env vars: `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
 
 ## Remaining Cleanup Work
 
