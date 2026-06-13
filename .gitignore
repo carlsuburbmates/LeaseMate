@@ -121,3 +121,4 @@ uploads/
 
 # Manus debug log collector output
 .manus-logs/
+.env*.local
