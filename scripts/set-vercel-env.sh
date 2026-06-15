@@ -1,21 +1,26 @@
 #!/bin/bash
-# Script to set all required env vars in Vercel for the lease-mate project
-# Run from the project root after `vercel link`
+# Script to set canonical production env vars in Vercel for the lease-mate project.
+# Run from the project root after `vercel link`.
+#
+# Preview deployments are intentionally left without integration secrets until a
+# dedicated preview stack exists. That prevents preview builds from sharing the
+# live database, storage, payment, email, and job backends.
 
 set -e
 export PATH="$HOME/.local/share/pnpm:$PATH"
 
-echo "Setting Vercel environment variables for lease-mate..."
+echo "Setting production environment variables for lease-mate..."
 
-# Function to add env var to both Production and Preview
+# Add a non-empty env var to Production only
 add_env() {
   local key="$1"
   local value="$2"
+  if [ -z "$value" ]; then
+    echo "Skipping $key (blank)"
+    return
+  fi
   echo "Adding $key..."
-  # Add to Production
   echo "$value" | vercel env add "$key" production --yes 2>&1 | tail -1
-  # Add to Preview
-  echo "$value" | vercel env add "$key" preview --yes 2>&1 | tail -1
 }
 
 # Core app
@@ -43,11 +48,6 @@ add_env "QSTASH_NEXT_SIGNING_KEY" "$QSTASH_NEXT_SIGNING_KEY"
 add_env "CRON_SECRET" "$CRON_SECRET"
 add_env "INTERNAL_JOB_SECRET" "$INTERNAL_JOB_SECRET"
 
-# Optional Redis
-add_env "REDIS_URL" "$REDIS_URL"
-add_env "UPSTASH_REDIS_REST_URL" "$UPSTASH_REDIS_REST_URL"
-add_env "UPSTASH_REDIS_REST_TOKEN" "$UPSTASH_REDIS_REST_TOKEN"
-
 # Object storage
 add_env "S3_BUCKET" "$S3_BUCKET"
 add_env "S3_REGION" "$S3_REGION"
@@ -58,5 +58,5 @@ add_env "S3_PUBLIC_BASE_URL" "$S3_PUBLIC_BASE_URL"
 add_env "S3_FORCE_PATH_STYLE" "$S3_FORCE_PATH_STYLE"
 
 echo ""
-echo "Done! Listing all env vars:"
+echo "Done! Listing production env vars:"
 vercel env ls

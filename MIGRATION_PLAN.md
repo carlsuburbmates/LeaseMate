@@ -62,6 +62,12 @@ These are the only meaningful external requirements left:
    - Local development uses in-process timers instead
    - Env vars: `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `CRON_SECRET`
 
+## Canonical Deployment Policy
+
+- Production is the only deployment tier that should receive live integration secrets by default.
+- Preview deployments should stay unconfigured until they have their own isolated backend stack.
+- Redis is not a runtime dependency in the current application and should not be treated as part of the canonical environment surface.
+
 ## Remaining Cleanup Work
 
 ### High priority
