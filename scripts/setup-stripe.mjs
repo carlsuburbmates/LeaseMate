@@ -14,7 +14,7 @@ const categories = [
   { slug: "carpet-cleaning",  name: "Carpet Cleaning Introduction Fee",      amount: 1500, description: "One-time fee for connecting with a vetted carpet cleaner in Greater Melbourne." },
   { slug: "pest-control",     name: "Pest Control Introduction Fee",         amount: 1500, description: "One-time fee for connecting with a vetted pest control provider in Greater Melbourne." },
   { slug: "handyman",         name: "Handyman Introduction Fee",             amount: 1500, description: "One-time fee for connecting with a vetted handyman in Greater Melbourne." },
-  { slug: "garden-clearance", name: "Garden Clearance Introduction Fee",     amount: 1500, description: "One-time fee for connecting with a vetted garden clearance provider in Greater Melbourne." },
+  { slug: "rubbish-removal",  name: "Rubbish Removal Introduction Fee",      amount: 1500, description: "One-time fee for connecting with a vetted rubbish removal provider in Greater Melbourne." },
 ];
 
 async function setup() {

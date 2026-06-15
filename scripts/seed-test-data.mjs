@@ -1,12 +1,14 @@
 /**
  * LeaseMate Test Data Seed Script
- * Creates 3 test user accounts (customer, provider, operator)
- * and associated data for UAT testing.
+ * Creates stable customer, provider, and operator data for local UAT.
  *
  * Run: node scripts/seed-test-data.mjs
  */
 
 import mysql from "mysql2/promise";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env", override: true });
 
 const DB_URL = process.env.DATABASE_URL;
 if (!DB_URL) {
@@ -18,8 +20,23 @@ const conn = await mysql.createConnection(DB_URL);
 
 console.log("🌱 Seeding LeaseMate test data...\n");
 
-// ─── 1. Test Users ────────────────────────────────────────────────────────────
-// These are pre-seeded with stable openIds for local or shared test environments.
+const SEED_ADDRESS = "42 Test Street";
+const SEED_EVENT_TYPES = [
+  "seed.provider_invitations_created",
+  "seed.exception_created",
+];
+
+function placeholders(count) {
+  return Array.from({ length: count }, () => "?").join(",");
+}
+
+async function deleteByIds(table, column, ids) {
+  if (ids.length === 0) return;
+  await conn.query(
+    `DELETE FROM \`${table}\` WHERE \`${column}\` IN (${placeholders(ids.length)})`,
+    ids,
+  );
+}
 
 const testUsers = [
   {
@@ -47,49 +64,92 @@ const testUsers = [
 
 const userIds = {};
 
-for (const u of testUsers) {
+for (const user of testUsers) {
   await conn.query(
     `INSERT INTO \`users\` (\`openId\`, \`name\`, \`email\`, \`loginMethod\`, \`role\`, \`isFlagged\`, \`lastSignedIn\`)
      VALUES (?, ?, ?, ?, ?, false, NOW())
-     ON DUPLICATE KEY UPDATE \`name\` = ?, \`email\` = ?, \`role\` = ?`,
-    [u.openId, u.name, u.email, u.loginMethod, u.role, u.name, u.email, u.role]
+     ON DUPLICATE KEY UPDATE \`name\` = ?, \`email\` = ?, \`role\` = ?, \`lastSignedIn\` = NOW()`,
+    [
+      user.openId,
+      user.name,
+      user.email,
+      user.loginMethod,
+      user.role,
+      user.name,
+      user.email,
+      user.role,
+    ],
   );
-  const [rows] = await conn.query("SELECT id FROM `users` WHERE `openId` = ?", [u.openId]);
-  userIds[u.role] = rows[0].id;
-  console.log(`✓ User: ${u.name} (${u.role}) — ID: ${userIds[u.role]}`);
+
+  const [rows] = await conn.query(
+    "SELECT id FROM `users` WHERE `openId` = ?",
+    [user.openId],
+  );
+  userIds[user.role] = rows[0].id;
+  console.log(`✓ User: ${user.name} (${user.role}) — ID: ${userIds[user.role]}`);
 }
 
-// ─── 2. Provider Profile ─────────────────────────────────────────────────────
-const providerId = userIds["provider"];
+const providerUserId = userIds.provider;
 await conn.query(
   `INSERT INTO \`provider_profiles\`
      (\`userId\`, \`businessName\`, \`abn\`, \`phone\`, \`contactEmail\`, \`suburb\`, \`status\`, \`maxJobsPerWeek\`)
    VALUES (?, ?, ?, ?, ?, ?, 'active', 8)
-   ON DUPLICATE KEY UPDATE \`businessName\` = VALUES(\`businessName\`)`,
+   ON DUPLICATE KEY UPDATE
+     \`businessName\` = VALUES(\`businessName\`),
+     \`abn\` = VALUES(\`abn\`),
+     \`phone\` = VALUES(\`phone\`),
+     \`contactEmail\` = VALUES(\`contactEmail\`),
+     \`suburb\` = VALUES(\`suburb\`),
+     \`status\` = VALUES(\`status\`),
+     \`maxJobsPerWeek\` = VALUES(\`maxJobsPerWeek\`)`,
   [
-    providerId,
+    providerUserId,
     "Smith & Co Removals",
     "51 824 753 556",
     "0412 345 678",
     "jordan.smith@test.leasemate.com.au",
     "Richmond",
-  ]
+  ],
 );
-const [provRows] = await conn.query("SELECT id FROM `provider_profiles` WHERE `userId` = ?", [providerId]);
-const provProfileId = provRows[0].id;
-console.log(`✓ Provider profile: Smith & Co Removals — Profile ID: ${provProfileId}`);
 
-// ─── 3. Service Products (for the test provider) ─────────────────────────────
-// Get category IDs
-const [cats] = await conn.query("SELECT id, slug FROM `service_categories`");
-const catMap = {};
-for (const c of cats) catMap[c.slug] = c.id;
+const [providerRows] = await conn.query(
+  "SELECT id FROM `provider_profiles` WHERE `userId` = ?",
+  [providerUserId],
+);
+const providerProfileId = providerRows[0].id;
+console.log(
+  `✓ Provider profile: Smith & Co Removals — Profile ID: ${providerProfileId}`,
+);
+
+const [categoryRows] = await conn.query("SELECT id, slug FROM `service_categories`");
+const categoryIdBySlug = {};
+for (const category of categoryRows) {
+  categoryIdBySlug[category.slug] = category.id;
+}
+
+for (const slug of ["removalist", "end-of-lease-cleaning"]) {
+  if (!categoryIdBySlug[slug]) {
+    throw new Error(
+      `Required service category '${slug}' is missing. Run node scripts/seed.mjs first.`,
+    );
+  }
+}
+
+await conn.query(
+  "DELETE FROM `service_products` WHERE `providerId` = ? AND `title` IN (?, ?)",
+  [
+    providerProfileId,
+    "Standard Removalist Package",
+    "End-of-Lease Clean (Standard)",
+  ],
+);
 
 const products = [
   {
-    categoryId: catMap["removalist"],
+    categoryId: categoryIdBySlug["removalist"],
     title: "Standard Removalist Package",
-    description: "2-person team, 4-hour minimum. Includes truck, blankets, and basic insurance.",
+    description:
+      "2-person team, 4-hour minimum. Includes truck, blankets, and basic insurance.",
     priceType: "hourly",
     priceAmount: "145.00",
     priceLabel: "$145/hr (min 4hrs)",
@@ -99,9 +159,10 @@ const products = [
     introductionFee: "39.00",
   },
   {
-    categoryId: catMap["end-of-lease-cleaning"],
+    categoryId: categoryIdBySlug["end-of-lease-cleaning"],
     title: "End-of-Lease Clean (Standard)",
-    description: "Full property clean to real estate standard. Includes oven, windows, and bathrooms.",
+    description:
+      "Full property clean to real estate standard. Includes oven, windows, and bathrooms.",
     priceType: "fixed",
     priceAmount: "320.00",
     priceLabel: "From $320",
@@ -112,56 +173,142 @@ const products = [
   },
 ];
 
-for (const p of products) {
+for (const product of products) {
   await conn.query(
     `INSERT INTO \`service_products\`
        (\`providerId\`, \`categoryId\`, \`title\`, \`description\`, \`priceType\`, \`priceAmount\`, \`priceLabel\`,
         \`coverageZones\`, \`propertyTypes\`, \`maxBedrooms\`, \`introductionFee\`, \`isActive\`)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true)
-     ON DUPLICATE KEY UPDATE \`title\` = VALUES(\`title\`)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true)`,
     [
-      provProfileId, p.categoryId, p.title, p.description,
-      p.priceType, p.priceAmount, p.priceLabel,
-      p.coverageZones, p.propertyTypes, p.maxBedrooms, p.introductionFee,
-    ]
+      providerProfileId,
+      product.categoryId,
+      product.title,
+      product.description,
+      product.priceType,
+      product.priceAmount,
+      product.priceLabel,
+      product.coverageZones,
+      product.propertyTypes,
+      product.maxBedrooms,
+      product.introductionFee,
+    ],
   );
-  console.log(`✓ Product: ${p.title}`);
+  console.log(`✓ Product: ${product.title}`);
 }
 
-// ─── 4. Test Move Request ─────────────────────────────────────────────────────
-const customerId = userIds["customer"];
+const customerId = userIds.customer;
+const [existingMoveRequestRows] = await conn.query(
+  "SELECT id FROM `move_requests` WHERE `customerId` = ? AND `propertyAddress` = ?",
+  [customerId, SEED_ADDRESS],
+);
+const existingMoveRequestIds = existingMoveRequestRows.map((row) => row.id);
+
+if (existingMoveRequestIds.length > 0) {
+  const [existingItemRows] = await conn.query(
+    `SELECT id FROM \`move_request_items\` WHERE \`moveRequestId\` IN (${placeholders(existingMoveRequestIds.length)})`,
+    existingMoveRequestIds,
+  );
+  const existingItemIds = existingItemRows.map((row) => row.id);
+
+  if (existingItemIds.length > 0) {
+    await deleteByIds("provider_invitations", "moveRequestItemId", existingItemIds);
+    await deleteByIds("customer_releases", "moveRequestItemId", existingItemIds);
+    await deleteByIds("introduction_fees", "moveRequestItemId", existingItemIds);
+    await deleteByIds("move_request_items", "id", existingItemIds);
+  }
+
+  await conn.query(
+    `DELETE FROM \`exceptions\` WHERE \`entityType\` = 'seeded_uat' AND \`moveRequestId\` IN (${placeholders(existingMoveRequestIds.length)})`,
+    existingMoveRequestIds,
+  );
+  await conn.query(
+    `DELETE FROM \`audit_events\` WHERE \`eventType\` IN (${placeholders(SEED_EVENT_TYPES.length)}) AND \`entityType\` = 'move_request' AND \`entityId\` IN (${placeholders(existingMoveRequestIds.length)})`,
+    [...SEED_EVENT_TYPES, ...existingMoveRequestIds],
+  );
+  await deleteByIds("move_requests", "id", existingMoveRequestIds);
+}
+
 await conn.query(
   `INSERT INTO \`move_requests\`
      (\`customerId\`, \`status\`, \`moveOutDate\`, \`propertyAddress\`, \`propertySuburb\`,
       \`propertyPostcode\`, \`propertyType\`, \`bedrooms\`, \`bathrooms\`, \`accessNotes\`, \`submittedAt\`)
    VALUES (?, 'submitted', DATE_ADD(NOW(), INTERVAL 14 DAY),
-           '42 Test Street', 'Richmond', '3121', 'apartment', 2, 1,
+           ?, 'Richmond', '3121', 'apartment', 2, 1,
            'Key in lockbox. Code: 1234. No lift — ground floor.', NOW())`,
-  [customerId]
+  [customerId, SEED_ADDRESS],
 );
-const [mrRows] = await conn.query(
-  "SELECT id FROM `move_requests` WHERE `customerId` = ? ORDER BY id DESC LIMIT 1",
-  [customerId]
+
+const [moveRequestRows] = await conn.query(
+  "SELECT id FROM `move_requests` WHERE `customerId` = ? AND `propertyAddress` = ? ORDER BY id DESC LIMIT 1",
+  [customerId, SEED_ADDRESS],
 );
-const moveRequestId = mrRows[0].id;
+const moveRequestId = moveRequestRows[0].id;
 console.log(`✓ Move request ID: ${moveRequestId} (customer: Alex Chen)`);
 
-// ─── 5. Move Request Items ────────────────────────────────────────────────────
 await conn.query(
   `INSERT INTO \`move_request_items\` (\`moveRequestId\`, \`categoryId\`, \`position\`, \`status\`)
-   VALUES (?, ?, 'preferred', 'pending_match')
-   ON DUPLICATE KEY UPDATE \`status\` = VALUES(\`status\`)`,
-  [moveRequestId, catMap["removalist"]]
+   VALUES (?, ?, 'preferred', 'pending_match')`,
+  [moveRequestId, categoryIdBySlug.removalist],
 );
 await conn.query(
   `INSERT INTO \`move_request_items\` (\`moveRequestId\`, \`categoryId\`, \`position\`, \`status\`)
-   VALUES (?, ?, 'preferred', 'pending_match')
-   ON DUPLICATE KEY UPDATE \`status\` = VALUES(\`status\`)`,
-  [moveRequestId, catMap["end-of-lease-cleaning"]]
+   VALUES (?, ?, 'preferred', 'pending_match')`,
+  [moveRequestId, categoryIdBySlug["end-of-lease-cleaning"]],
 );
-console.log(`✓ Move request items: Removalist + End-of-Lease Cleaning`);
+console.log("✓ Move request items: Removalist + End-of-Lease Cleaning");
 
-// ─── 6. Summary ──────────────────────────────────────────────────────────────
+const [itemRows] = await conn.query(
+  "SELECT id, categoryId FROM `move_request_items` WHERE `moveRequestId` = ? ORDER BY `id` ASC",
+  [moveRequestId],
+);
+const moveRequestItemIdByCategoryId = {};
+for (const item of itemRows) {
+  moveRequestItemIdByCategoryId[item.categoryId] = item.id;
+}
+
+const invitations = [
+  moveRequestItemIdByCategoryId[categoryIdBySlug.removalist],
+  moveRequestItemIdByCategoryId[categoryIdBySlug["end-of-lease-cleaning"]],
+];
+
+for (const moveRequestItemId of invitations) {
+  await conn.query(
+    `INSERT INTO \`provider_invitations\`
+       (\`moveRequestItemId\`, \`providerId\`, \`status\`, \`invitedAt\`, \`expiresAt\`)
+     VALUES (?, ?, 'pending', NOW(), DATE_ADD(NOW(), INTERVAL 48 HOUR))`,
+    [moveRequestItemId, providerProfileId],
+  );
+}
+console.log("✓ Provider invitations: 2 pending opportunities");
+
+await conn.query(
+  `INSERT INTO \`exceptions\`
+     (\`code\`, \`severity\`, \`affectedParty\`, \`entityType\`, \`entityId\`, \`moveRequestId\`, \`providerId\`, \`customerId\`, \`description\`, \`status\`)
+   VALUES ('EX-11', 'warning', 'Operator', 'seeded_uat', ?, ?, ?, ?, ?, 'open')`,
+  [
+    moveRequestId,
+    moveRequestId,
+    providerProfileId,
+    customerId,
+    "Seeded UAT exception for operator workflow review.",
+  ],
+);
+console.log("✓ Open exception: EX-11 seeded for ops workflow");
+
+await conn.query(
+  `INSERT INTO \`audit_events\`
+     (\`eventType\`, \`entityType\`, \`entityId\`, \`actorType\`, \`actorId\`, \`description\`)
+   VALUES
+     ('seed.provider_invitations_created', 'move_request', ?, 'system', NULL, ?),
+     ('seed.exception_created', 'move_request', ?, 'system', NULL, ?)`,
+  [
+    moveRequestId,
+    "Seeded two provider invitations for local UAT.",
+    moveRequestId,
+    "Seeded EX-11 operator workflow exception for local UAT.",
+  ],
+);
+
 console.log(`
 ╔══════════════════════════════════════════════════════════════════╗
 ║                  LEASEMATE TEST ACCOUNTS                         ║
@@ -170,7 +317,7 @@ console.log(`
 ║  Name:    Alex Chen                                              ║
 ║  Email:   alex.chen@test.leasemate.com.au                        ║
 ║  Role:    customer                                               ║
-║  DB ID:   ${String(userIds["customer"]).padEnd(52)}║
+║  DB ID:   ${String(userIds.customer).padEnd(52)}║
 ║  Login:   Open /login and sign in as Alex Chen                   ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  PROVIDER                                                        ║
@@ -178,7 +325,7 @@ console.log(`
 ║  Business: Smith & Co Removals                                   ║
 ║  Email:   jordan.smith@test.leasemate.com.au                     ║
 ║  Role:    provider                                               ║
-║  DB ID:   ${String(userIds["provider"]).padEnd(52)}║
+║  DB ID:   ${String(userIds.provider).padEnd(52)}║
 ║  ABN:     51 824 753 556                                         ║
 ║  Suburb:  Richmond                                               ║
 ╠══════════════════════════════════════════════════════════════════╣
@@ -186,13 +333,15 @@ console.log(`
 ║  Name:    LeaseMate Ops                                          ║
 ║  Email:   ops@test.leasemate.com.au                              ║
 ║  Role:    operator                                               ║
-║  DB ID:   ${String(userIds["operator"]).padEnd(52)}║
+║  DB ID:   ${String(userIds.operator).padEnd(52)}║
 ║  Login:   Open /login and sign in as LeaseMate Ops               ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  TEST DATA                                                       ║
 ║  Move Request ID: ${String(moveRequestId).padEnd(46)}║
 ║  Property: 42 Test Street, Richmond VIC 3121                     ║
 ║  Services: Removalist + End-of-Lease Cleaning                    ║
+║  Invitations: 2 pending provider opportunities                   ║
+║  Exception: EX-11 open for ops testing                           ║
 ║  Move-out: 14 days from now                                      ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  STRIPE TEST CARD                                                ║

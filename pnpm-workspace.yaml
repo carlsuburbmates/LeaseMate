@@ -7,3 +7,8 @@ packages:
 # Note: patchedDependencies must remain in package.json "pnpm" field for pnpm v10.
 overrides:
   tailwindcss>nanoid: "3.3.7"
+  "@babel/core": "7.29.7"
+  esbuild: "0.28.1"
+  lodash: "4.17.23"
+  path-to-regexp: "0.1.13"
+  qs: "6.14.2"

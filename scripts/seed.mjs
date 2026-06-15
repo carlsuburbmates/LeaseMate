@@ -1,10 +1,25 @@
-import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env", override: true });
 
 const connection = await mysql.createConnection(process.env.DATABASE_URL);
-const db = drizzle(connection);
+
+const serviceCategories = [
+  ["removalist", "Removalist", "Professional furniture and household goods moving services for your move-out day.", "Truck", 1],
+  ["end-of-lease-cleaning", "End-of-Lease Cleaning", "Bond-back guaranteed cleaning services to ensure your rental property is spotless.", "Sparkles", 2],
+  ["carpet-cleaning", "Carpet Cleaning", "Deep steam and dry carpet cleaning to restore carpets to rental condition.", "Wind", 3],
+  ["pest-control", "Pest Control", "End-of-lease pest treatment including cockroach, flea, and rodent control.", "Bug", 4],
+  ["rubbish-removal", "Rubbish Removal", "Junk and hard rubbish collection to clear your property before final inspection.", "Trash2", 5],
+  ["handyman", "Handyman", "Minor repairs, wall patching, and maintenance to meet lease obligations.", "Wrench", 6],
+];
+
+for (const [slug, name, description, iconName, sortOrder] of serviceCategories) {
+  await connection.execute(
+    "INSERT IGNORE INTO service_categories (slug, name, description, iconName, sortOrder, isActive) VALUES (?,?,?,?,?,1)",
+    [slug, name, description, iconName, sortOrder]
+  );
+}
+console.log(`Seeded ${serviceCategories.length} service categories`);
 
 // Seed suburbs in batches
 const suburbs = [

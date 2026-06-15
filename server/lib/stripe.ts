@@ -28,33 +28,33 @@ function getStripe(): Stripe {
  */
 export const STRIPE_PRICES: Record<string, { productId: string; priceId: string; amountAud: number }> = {
   "removalist": {
-    productId: "prod_UghUHJ58Ie7vBj",
-    priceId: "price_1ThK5dBHXGhoTPa1jtKD39BU",
+    productId: "prod_Ui7mlokSK8VDav",
+    priceId: "price_1TihXACnSMWZLbpKx9U66Fgx",
     amountAud: 25,
   },
   "end-of-lease-cleaning": {
-    productId: "prod_UghU5cmqPfvuOb",
-    priceId: "price_1ThK5fBHXGhoTPa1KwqtblbA",
+    productId: "prod_Ui7mSYeptizOxL",
+    priceId: "price_1TihXBCnSMWZLbpKJIVe4IEg",
     amountAud: 15,
   },
   "carpet-cleaning": {
-    productId: "prod_UghUUTrFWZJhrJ",
-    priceId: "price_1ThK5gBHXGhoTPa1hLyrnTPG",
+    productId: "prod_Ui7msJX1DSJJrJ",
+    priceId: "price_1TihXCCnSMWZLbpKC767CTAx",
     amountAud: 15,
   },
   "pest-control": {
-    productId: "prod_UghUHYckO4eAZV",
-    priceId: "price_1ThK5hBHXGhoTPa15km4vzoQ",
+    productId: "prod_Ui7mWB6VfPIq0m",
+    priceId: "price_1TihXDCnSMWZLbpKLcxs9OND",
     amountAud: 15,
   },
   "handyman": {
-    productId: "prod_UghUbDDQPDATEN",
-    priceId: "price_1ThK5iBHXGhoTPa1ygjZSQzi",
+    productId: "prod_Ui7mk5y8cD6krB",
+    priceId: "price_1TihXECnSMWZLbpKfjgYZxJS",
     amountAud: 15,
   },
   "rubbish-removal": {
-    productId: "prod_UghUJc4tuoTqm4",
-    priceId: "price_1ThK5jBHXGhoTPa1WppHJIL1",
+    productId: "prod_Ui7mFIGsqSKUBG",
+    priceId: "price_1TihXFCnSMWZLbpKCTyBbruh",
     amountAud: 15,
   },
 };

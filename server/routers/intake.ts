@@ -9,6 +9,7 @@ import {
   getMoveRequestById,
   getMoveRequestItems,
   getMoveRequestsByCustomer,
+  getServiceCategories,
   updateMoveRequest,
 } from "../db";
 import { ENV } from "../_core/env";
@@ -130,12 +131,17 @@ export const intakeRouter = router({
       }
 
       const items = await getMoveRequestItems(input.requestId);
+      const categories = await getServiceCategories();
+      const categoryById = new Map(
+        categories.map((category) => [category.id, category]),
+      );
 
       return {
         ...request,
         statusLabel: CUSTOMER_STATUS_LABELS[request.status] ?? request.status,
         items: items.map((item) => ({
           ...item,
+          categoryName: categoryById.get(item.categoryId)?.name ?? null,
           statusLabel: CUSTOMER_STATUS_LABELS[item.status] ?? item.status,
         })),
       };

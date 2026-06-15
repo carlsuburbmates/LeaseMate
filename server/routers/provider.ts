@@ -25,7 +25,10 @@ import {
   updateProviderProfile,
 } from "../db";
 import { notifyOwner } from "../_core/notification";
-import { createIntroductionFeeCheckout } from "../lib/stripe";
+import {
+  createIntroductionFeeCheckout,
+  STRIPE_PRICES,
+} from "../lib/stripe";
 import { schedulePaymentDeadlineCheck } from "../lib/qstash";
 import { sendProviderRefundApproved } from "../lib/resend";
 import { ENV } from "../_core/env";
@@ -157,6 +160,10 @@ export const providerRouter = router({
     if (!profile) return [];
 
     const invitations = await getInvitationsByProvider(profile.id);
+    const categories = await getServiceCategories();
+    const categoryById = new Map(
+      categories.map((category) => [category.id, category]),
+    );
 
     return Promise.all(
       invitations.map(async (invitation) => {
@@ -164,6 +171,7 @@ export const providerRouter = router({
         const moveRequest = item
           ? await getMoveRequestById(item.moveRequestId)
           : null;
+        const category = item ? categoryById.get(item.categoryId) : undefined;
         const fee = await getFeeByInvitation(invitation.id);
         const release =
           fee?.status === "paid" ? await getCustomerRelease(fee.id) : null;
@@ -181,6 +189,8 @@ export const providerRouter = router({
           expiresAt: invitation.expiresAt,
           respondedAt: invitation.respondedAt,
           declineReason: invitation.declineReason,
+          categorySlug: category?.slug ?? null,
+          categoryName: category?.name ?? null,
           propertySuburb: moveRequest?.propertySuburb ?? null,
           propertyType: moveRequest?.propertyType ?? null,
           bedrooms: moveRequest?.bedrooms ?? null,
@@ -195,7 +205,11 @@ export const providerRouter = router({
           customerName: addressReleased ? customer?.name ?? null : null,
           addressReleased,
           feeStatus: fee?.status ?? null,
-          feeAmount: fee?.amount ?? null,
+          feeAmount:
+            fee?.amount ??
+            (category
+              ? STRIPE_PRICES[category.slug]?.amountAud?.toFixed(2) ?? null
+              : null),
         };
       }),
     );

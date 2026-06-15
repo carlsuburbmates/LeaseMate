@@ -135,7 +135,7 @@ export default function OpsRequestDetail() {
                   {items.map((item: any) => (
                     <div key={item.id} className="flex items-start sm:items-center justify-between gap-3 py-3 border-b border-white/10 last:border-0">
                       <div>
-                        <p className="text-sm font-medium text-white/80">Category #{item.categoryId}</p>
+                        <p className="text-sm font-medium text-white/80">{item.categoryName ?? `Category #${item.categoryId}`}</p>
                         <p className="text-xs text-white/40 capitalize">{item.position} provider · Product #{item.productId}</p>
                       </div>
                       <Badge className={`text-xs flex-shrink-0 ${

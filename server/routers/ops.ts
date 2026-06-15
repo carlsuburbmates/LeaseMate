@@ -7,7 +7,7 @@ import {
   createAuditEvent,
   createException,
   flagUser,
-  getActiveProviders,
+  getAllProviders,
   getAllExceptions,
   getAllMoveRequests,
   getAuditEvents,
@@ -20,6 +20,7 @@ import {
   getOpenExceptions,
   getOpsDashboardStats,
   getRecentAuditEvents,
+  getServiceCategories,
   getUserById,
   pauseProvider,
   updateException,
@@ -51,7 +52,18 @@ export const opsRouter = router({
       }
 
       const items = await getMoveRequestItems(input.requestId);
-      return { ...request, items };
+      const categories = await getServiceCategories();
+      const categoryById = new Map(
+        categories.map((category) => [category.id, category]),
+      );
+
+      return {
+        ...request,
+        items: items.map((item) => ({
+          ...item,
+          categoryName: categoryById.get(item.categoryId)?.name ?? null,
+        })),
+      };
     }),
 
   updateRequestStatus: operatorProcedure
@@ -247,7 +259,7 @@ export const opsRouter = router({
       return { success: true };
     }),
 
-  allProviders: operatorProcedure.query(() => getActiveProviders()),
+  allProviders: operatorProcedure.query(() => getAllProviders()),
 
   auditLog: operatorProcedure
     .input(

@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env", override: true });
 
 const connection = await mysql.createConnection(process.env.DATABASE_URL);
 

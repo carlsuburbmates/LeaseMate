@@ -15,6 +15,13 @@
       "when": 1781192692382,
       "tag": "0001_narrow_moira_mactaggert",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1781555578436,
+      "tag": "0002_careless_ink",
+      "breakpoints": true
     }
   ]
 }

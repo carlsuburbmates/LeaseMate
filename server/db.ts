@@ -208,6 +208,12 @@ export async function getActiveProviders() {
   return db.select().from(providerProfiles).where(eq(providerProfiles.status, "active"));
 }
 
+export async function getAllProviders() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(providerProfiles).orderBy(providerProfiles.businessName);
+}
+
 // ─── Move Requests ────────────────────────────────────────────────────────
 
 export async function getMoveRequestsByCustomer(customerId: number) {
