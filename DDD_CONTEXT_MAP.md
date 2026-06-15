@@ -172,19 +172,15 @@ Translation rules:
 - Add new internal statuses only with a mapped customer-safe label.
 - Do not expose exception-heavy backend vocabulary directly to end users.
 
-### 6. Reference Catalog requires a stronger ACL at the intake boundary
-
-Current gap:
-
-- `client/src/pages/customer/MoveOutCart.tsx` hardcodes `CATEGORY_ID_MAP`.
+### 6. Reference Catalog governs category identity at the intake boundary
 
 Decision:
 
 - Customer Intake should consume category identity through the Reference Catalog context, not through hardcoded IDs in the UI.
 
-Mitigation:
+Current implementation:
 
-- Replace hardcoded category-to-ID mapping with a catalog lookup layer from the reference API before expanding intake features.
+- `client/src/pages/customer/MoveOutCart.tsx` now resolves category IDs from the `reference.categories` API instead of relying on seed-order assumptions.
 
 ## Failure modes and fallback behavior
 
@@ -215,10 +211,8 @@ Mitigation:
 
 | Risk | Why it matters | Mitigation |
 |---|---|---|
-| Hardcoded service-category IDs in customer intake | Couples UI behavior to seed order and database identity | Resolve category IDs from Reference Catalog instead of local constants |
-| `server/routers.ts` mixes multiple contexts in one file | Makes context ownership hard to preserve as the project grows | Split routers by bounded context and keep integration orchestration explicit |
 | Billing webhook directly triggers notifications and release workflow | Creates tight coupling between external payment events and multiple downstream concerns | Introduce a local application service or domain-event layer before expanding billing features |
-| Exception taxonomy and audit event names are string-based | Drift is easy when multiple contexts emit them | Centralize constants and add contract tests around operator-visible events |
+| Audit event names are still string-based | Drift is easy when multiple contexts emit them | Centralize audit-event constants and add contract tests around operator-visible events |
 | Preview deployments are not isolated | Enabling secrets there would create data and payment collisions | Keep preview secretless until a dedicated preview stack exists |
 | Storage context exists before a fully modeled file use case | Future uploads could leak infrastructure assumptions into core contexts | Define a file metadata model before attaching uploads to customer/provider workflows |
 
@@ -232,7 +226,5 @@ Mitigation:
 
 ## Recommended next refactors
 
-1. Split `server/routers.ts` into bounded-context router modules.
-2. Replace `CATEGORY_ID_MAP` in `client/src/pages/customer/MoveOutCart.tsx` with a catalog-backed lookup.
-3. Introduce internal event objects between Billing, Notifications, and Ops before adding more payment scenarios.
-4. Centralize exception-code and audit-event constants to stop string drift.
+1. Introduce internal event objects between Billing, Notifications, and Ops before adding more payment scenarios.
+2. Centralize audit-event constants to stop string drift across contexts.

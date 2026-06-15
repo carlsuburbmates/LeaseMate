@@ -14,24 +14,13 @@ import { ArrowRight, ArrowLeft, CheckCircle2, Truck, Sparkles, Wind, Bug, Trash2
 
 const BIG_6 = [
   { id: "removalist", name: "Removalist", icon: Truck, desc: "Furniture and goods moving" },
-  { id: "cleaning", name: "End-of-Lease Cleaning", icon: Sparkles, desc: "Bond-back standard clean" },
-  { id: "carpet", name: "Carpet Cleaning", icon: Wind, desc: "Steam and dry cleaning" },
-  { id: "pest", name: "Pest Control", icon: Bug, desc: "Flea, cockroach, rodent" },
-  { id: "rubbish", name: "Rubbish Removal", icon: Trash2, desc: "Junk and hard rubbish" },
+  { id: "end-of-lease-cleaning", name: "End-of-Lease Cleaning", icon: Sparkles, desc: "Bond-back standard clean" },
+  { id: "carpet-cleaning", name: "Carpet Cleaning", icon: Wind, desc: "Steam and dry cleaning" },
+  { id: "pest-control", name: "Pest Control", icon: Bug, desc: "Flea, cockroach, rodent" },
+  { id: "rubbish-removal", name: "Rubbish Removal", icon: Trash2, desc: "Junk and hard rubbish" },
   { id: "handyman", name: "Handyman", icon: Wrench, desc: "Repairs and maintenance" },
 ];
-
 const STEPS = ["Property Details", "Services", "Review & Submit"];
-
-// Map BIG_6 slug → seeded category ID
-const CATEGORY_ID_MAP: Record<string, number> = {
-  removalist: 1,
-  cleaning: 2,
-  carpet: 3,
-  pest: 4,
-  rubbish: 5,
-  handyman: 6,
-};
 
 export default function MoveOutCart() {
   const { isAuthenticated, loading } = useAuth();
@@ -53,10 +42,19 @@ export default function MoveOutCart() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   const { data: suburbs } = trpc.reference.suburbs.useQuery();
+  const { data: categories, isLoading: categoriesLoading } = trpc.reference.categories.useQuery();
   const addCartItem = trpc.intake.addCartItem.useMutation();
   const createRequest = trpc.intake.createRequest.useMutation({
     onSuccess: async (data) => {
       setRequestId(data.id);
+      const categoryIdBySlug = new Map((categories ?? []).map((category: any) => [category.slug, category.id]));
+      const missingCategory = selectedServices.find((slug) => !categoryIdBySlug.has(slug));
+
+      if (missingCategory) {
+        toast.error(`Service category is unavailable: ${missingCategory}`);
+        return;
+      }
+
       // Persist each selected service as a cart item
       setIsSavingItems(true);
       try {
@@ -64,7 +62,7 @@ export default function MoveOutCart() {
           selectedServices.map((slug) =>
             addCartItem.mutateAsync({
               requestId: data.id,
-              categoryId: CATEGORY_ID_MAP[slug] ?? 1,
+              categoryId: categoryIdBySlug.get(slug)!,
               position: "preferred",
             })
           )
@@ -115,7 +113,12 @@ export default function MoveOutCart() {
     property.bedrooms !== "" &&
     property.bathrooms !== "";
 
-  const canProceedStep1 = selectedServices.length > 0;
+  const canProceedStep1 =
+    selectedServices.length > 0 &&
+    !categoriesLoading &&
+    selectedServices.every((slug) =>
+      (categories ?? []).some((category: any) => category.slug === slug)
+    );
 
   return (
     <PublicLayout>
@@ -247,6 +250,12 @@ export default function MoveOutCart() {
           <div>
             <h1 className="text-2xl font-semibold text-[#2C2C2C] mb-1">Select services</h1>
             <p className="text-[#6B6B6B] text-sm mb-8">Choose all the services you need. You can add as many as required.</p>
+
+            {!categoriesLoading && !canProceedStep1 && selectedServices.length > 0 && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                One or more selected services are not available from the current service catalog.
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
               {BIG_6.map((s) => {
