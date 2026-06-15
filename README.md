@@ -60,9 +60,9 @@ The platform is designed to run in a fully automated state. The state machine, b
 
 For deep-dives into specific areas of the platform, refer to the following canonical documents:
 
+- **[LOCAL_BUILD_STRATEGY.md](./LOCAL_BUILD_STRATEGY.md)**: The canonical local runbook for the full app, including ops.
 - **[DDD_CONTEXT_MAP.md](./DDD_CONTEXT_MAP.md)**: The canonical bounded-context map, contract ownership matrix, and anti-corruption rules.
 - **[INTEGRATIONS.md](./INTEGRATIONS.md)**: The canonical register of verified integrations, connection points, and non-canonical leftovers.
-- **[LLM_APP_ASSESSMENT.md](./LLM_APP_ASSESSMENT.md)**: The fit assessment for LLM patterns and the current recommendation boundary.
 - **[UAT-GUIDE.md](./UAT-GUIDE.md)**: Step-by-step user acceptance testing flows for all three user roles (Customer, Provider, Operator).
 - **[MIGRATION_PLAN.md](./MIGRATION_PLAN.md)**: The current runtime status, external dependency checklist, and local development notes.
 - **Code paths**: `server/lib/qstash.ts`, `server/stripeWebhook.ts`, and `server/routers/*` are the canonical automation and workflow implementation.
