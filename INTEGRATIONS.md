@@ -48,7 +48,7 @@ That includes:
 |---|---|---|---|---|---|
 | Vercel | Active | Hosts the frontend build, runs the `api/index.ts` serverless entrypoint, stores production env vars, and triggers daily cron cleanup | `vercel.json`, `api/index.ts`, `server/_core/jobs.ts` | `APP_URL`, production env store | Verified via linked project, deployment list, production env list, and live project metadata on 2026-06-16 |
 | Cloudflare R2 | Active | S3-compatible object storage backend for `/storage/*` redirects and any future object writes | `server/_core/storageProxy.ts`, `server/storage.ts`, `server/_core/env.ts` | `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, optional `S3_PUBLIC_BASE_URL`, optional `S3_FORCE_PATH_STYLE` | Verified by successful write/delete health check against the configured bucket on 2026-06-16 |
-| Stripe | Active in configuration | Provider introduction-fee checkout, webhook verification, payment persistence, and payment-triggered release flow | `server/lib/stripe.ts`, `server/stripeWebhook.ts`, `server/routers.ts`, `drizzle/schema.ts` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` | Verified as configured locally and in Vercel production; code paths confirmed; not live-charged in this audit step |
+| Stripe | Active | Provider introduction-fee checkout, webhook verification, payment persistence, and payment-triggered release flow | `server/lib/stripe.ts`, `server/stripeWebhook.ts`, `server/routers.ts`, `drizzle/schema.ts` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` | Verified on 2026-06-19: live Checkout Session creation succeeded against the LeaseMate sandbox account, signed `checkout.session.completed` webhook processing succeeded through the running local app, payment persistence/release/audit completed, and duplicate delivery stayed idempotent |
 | Resend | Active in configuration | Transactional emails to customers/providers and owner alerts | `server/lib/resend.ts`, `server/_core/notification.ts`, `server/routers.ts`, `server/stripeWebhook.ts`, `server/lib/qstash.ts` | `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, `RESEND_REPLY_TO`, `OWNER_EMAIL` | Verified on 2026-06-19: API key authenticates, account currently has zero verified domains, code now supports the shared onboarding sender until a custom domain is verified |
 | Upstash QStash | Active in configuration | Delayed jobs for provider timeout, payment deadline, and cleanup calls; signature verification for queued callbacks | `server/lib/qstash.ts`, `server/_core/jobs.ts`, `server/routers.ts`, `vercel.json` | `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `CRON_SECRET`, optional `INTERNAL_JOB_SECRET`, `APP_URL` | Verified as configured locally and in Vercel production; publish/verify code paths confirmed; no live publish executed in this audit step |
 
@@ -124,6 +124,13 @@ Important note:
 - frontend redirect to the checkout URL returned by the backend
 - webhook verification
 - payment data persistence and business workflow continuation
+
+Current verified state:
+
+- Checkout Session creation works against the LeaseMate Stripe sandbox account
+- The local webhook route now correctly parses raw request bodies before signature verification
+- A signed `checkout.session.completed` event persists the introduction fee, releases customer details, and writes the expected audit records
+- Duplicate delivery for the same invitation now leaves fee and audit counts stable
 
 ### Resend
 

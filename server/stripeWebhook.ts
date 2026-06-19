@@ -6,7 +6,7 @@
  *   checkout.session.completed → mark invitation as paid, create customer_release,
  *                                 send emails, write audit event
  */
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { ENV } from "./_core/env";
 import { constructWebhookEvent } from "./lib/stripe";
 import { getDb } from "./db";
@@ -29,13 +29,11 @@ import {
 export function registerStripeWebhook(app: Express): void {
   app.post(
     "/api/stripe/webhook",
-    // express.raw must be applied before express.json() in index.ts
+    express.raw({ type: "application/json" }),
     (req: Request, res: Response) => {
       const sig = req.headers["stripe-signature"];
-
-      // Test event passthrough (Stripe dashboard test button)
-      if (typeof sig === "string" && sig.includes("test")) {
-        return res.json({ verified: true });
+      if (typeof sig !== "string" || sig.trim() === "") {
+        return res.status(400).json({ error: "Webhook Error: Missing stripe-signature header" });
       }
 
       let event;
@@ -102,16 +100,42 @@ async function handleWebhookEvent(event: import("stripe").Stripe.Event): Promise
     // 2. Create introduction_fees record
     const amountCents = session.amount_total ?? 0;
     const amountDecimal = (amountCents / 100).toFixed(2);
-    await db.insert(introductionFees).values({
-      invitationId,
-      providerId,
-      moveRequestItemId: invitation.moveRequestItemId,
-      amount: amountDecimal,
-      stripePaymentIntentId: (session.payment_intent as string) ?? null,
-      stripeCheckoutSessionId: session.id,
-      status: "paid",
-      paidAt: new Date(),
-    });
+    const [existingFee] = await db
+      .select()
+      .from(introductionFees)
+      .where(eq(introductionFees.invitationId, invitationId))
+      .limit(1);
+
+    if (existingFee?.status === "paid") {
+      console.log(`[Stripe Webhook] Duplicate paid event ignored for invitation #${invitationId}`);
+      await triggerCustomerDetailsRelease(invitationId);
+      return;
+    }
+
+    if (existingFee) {
+      await db
+        .update(introductionFees)
+        .set({
+          amount: amountDecimal,
+          stripePaymentIntentId: (session.payment_intent as string) ?? null,
+          stripeCheckoutSessionId: session.id,
+          status: "paid",
+          paidAt: new Date(),
+          overdueAt: null,
+        })
+        .where(eq(introductionFees.id, existingFee.id));
+    } else {
+      await db.insert(introductionFees).values({
+        invitationId,
+        providerId,
+        moveRequestItemId: invitation.moveRequestItemId,
+        amount: amountDecimal,
+        stripePaymentIntentId: (session.payment_intent as string) ?? null,
+        stripeCheckoutSessionId: session.id,
+        status: "paid",
+        paidAt: new Date(),
+      });
+    }
 
     // 3. Get move request details for customer release
     const [item] = await db
