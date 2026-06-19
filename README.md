@@ -2,6 +2,13 @@
 
 LeaseMate is a three-sided marketplace platform designed to orchestrate and automate the end-of-lease moving process. It connects tenants (Customers) with vetted local service businesses (Providers) under the supervision of a platform administrator (Operator).
 
+Terminology used in this repo:
+
+- `local` means the app is running from your machine
+- `remote` means the backing services outside your machine that the app connects to
+
+In the canonical LeaseMate setup, `remote` includes GitHub, Vercel, TiDB Cloud Starter, Cloudflare R2, Stripe, Resend, and QStash.
+
 ## 1. Local Development Setup
 
 The project is a Vite + React + Express monolith managed by `pnpm`.
@@ -53,7 +60,7 @@ The project is a Vite + React + Express monolith managed by `pnpm`.
 | `pnpm run check` | Runs TypeScript compiler (`tsc --noEmit`). | Before committing code or opening a PR. |
 | `pnpm run format` | Runs Prettier to enforce standard style. | Before committing code. |
 | `pnpm run test` | Runs the Vitest test suite. | When modifying backend routers or core business logic. |
-| `pnpm run db:push` | Applies schema changes to the local database. | After modifying `drizzle/schema.ts`. |
+| `pnpm run db:push` | Applies schema changes to the configured database connection. | After modifying `drizzle/schema.ts`. |
 
 ## 3. Architecture & Key Documentation
 
@@ -94,7 +101,6 @@ Canonical environment policy:
 
 For a production-like environment, the intended runtime mix is:
 
-- **Database**: remote MySQL-compatible service
 - **Database**: remote MySQL-compatible service, with TiDB Cloud Starter as the canonical recommended setup
 - **File storage**: remote S3-compatible object storage via the `S3_*` env vars
 - **Payments**: Stripe

@@ -13,6 +13,28 @@ Use it to answer four questions before touching infrastructure:
 
 If an integration is changed, added, removed, or duplicated, update this file in the same change.
 
+## Terminology
+
+In LeaseMate, `remote` means any dependency that lives outside the local machine.
+
+That includes:
+
+- GitHub for the source-of-truth repo
+- Vercel for deployment hosting
+- TiDB Cloud Starter for the canonical database
+- Cloudflare R2 for the canonical object storage
+- Stripe for payments
+- Resend for email delivery
+- Upstash QStash for durable delayed jobs
+
+`Local` means the developer machine:
+
+- the checked-out repo
+- the dev server on `localhost`
+- local auth/session state
+- local timer fallbacks
+- local disk uploads only when remote storage is not configured
+
 ## Canonical rules
 
 - Treat this file as the integration registry for both local development and Vercel production.

@@ -10,6 +10,22 @@ This is the canonical local runbook for building and operating the full LeaseMat
 - local auth
 - local automation behavior
 
+## Terminology
+
+For this project:
+
+- `local` means the app is running from your machine
+- `remote` means the backing services the local app talks to outside your machine
+
+In the canonical local setup, the app runs locally while still using remote services for:
+
+- GitHub as the source-of-truth repo
+- TiDB Cloud Starter as the database
+- Cloudflare R2 as object storage
+- Stripe as payments
+- Resend as email
+- QStash as optional durable delayed-job infrastructure
+
 ## Objective
 
 The local target is not a stripped demo.

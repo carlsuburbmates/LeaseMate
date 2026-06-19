@@ -11,8 +11,10 @@ Do not treat this older folder as the working repo:
 ## Current State
 
 - Git remote: `https://github.com/carlsuburbmates/LeaseMate.git`
+- Canonical remote database: TiDB Cloud Starter
+- Canonical remote storage: Cloudflare R2
 - Branch: `main`
-- Latest verified push: `2a498c4 fix: stabilize local launch workflow`
+- Latest verified push: `ee04e0f docs: align canonical local integrations`
 - Local UAT completed across customer, provider, and ops
 - `check`, `test`, and `build` passed in the canonical repo
 
