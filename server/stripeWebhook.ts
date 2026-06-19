@@ -194,7 +194,7 @@ async function handleWebhookEvent(event: import("stripe").Stripe.Event): Promise
         requestId: request.id,
         serviceCategory: categoryDisplay,
         suburb: request.propertySuburb,
-        dashboardUrl: `${appBase}/customer/requests/${request.id}`,
+        dashboardUrl: `${appBase}/requests/${request.id}`,
       }).catch(err => console.error("[Stripe Webhook] Failed to send customer matched email:", err));
     }
 

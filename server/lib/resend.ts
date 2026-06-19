@@ -2,15 +2,15 @@
  * LeaseMate Resend Email Integration
  * All transactional emails for the LeaseMate marketplace.
  *
- * Sender: notifications@leasemate.com.au (configure in Resend dashboard)
+ * Sender: configured by RESEND_FROM_ADDRESS.
+ * Defaults to Resend's shared onboarding sender until a custom domain is verified.
  * Brand: Charcoal #1C1C1E / Slate Teal #4A7C7E / Alabaster #F5F4F0 / Inter font
  */
+import { ENV } from "../_core/env";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
-const FROM_ADDRESS = "LeaseMate <notifications@leasemate.com.au>";
-const REPLY_TO = "support@leasemate.com.au";
-
-export { FROM_ADDRESS };
+export function getFromAddress() {
+  return ENV.resendFromAddress;
+}
 
 // ─── Base HTML wrapper ────────────────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ async function sendEmail(params: {
   html: string;
   replyTo?: string;
 }): Promise<{ id: string } | null> {
-  if (!RESEND_API_KEY) {
+  if (!ENV.resendApiKey) {
     console.warn("[Resend] RESEND_API_KEY not set — email not sent:", params.subject);
     return null;
   }
@@ -86,15 +86,15 @@ async function sendEmail(params: {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Authorization": `Bearer ${ENV.resendApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: FROM_ADDRESS,
+        from: getFromAddress(),
         to: Array.isArray(params.to) ? params.to : [params.to],
         subject: params.subject,
         html: params.html,
-        reply_to: params.replyTo ?? REPLY_TO,
+        reply_to: params.replyTo ?? ENV.resendReplyTo,
       }),
     });
     if (!res.ok) {

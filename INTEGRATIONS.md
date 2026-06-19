@@ -1,6 +1,6 @@
 # LeaseMate Canonical Integration Register
 
-Last updated: 2026-06-16
+Last updated: 2026-06-19
 
 This file is the canonical source of truth for external integrations in LeaseMate.
 
@@ -27,7 +27,7 @@ If an integration is changed, added, removed, or duplicated, update this file in
 | Vercel | Active | Hosts the frontend build, runs the `api/index.ts` serverless entrypoint, stores production env vars, and triggers daily cron cleanup | `vercel.json`, `api/index.ts`, `server/_core/jobs.ts` | `APP_URL`, production env store | Verified via linked project, deployment list, production env list, and live project metadata on 2026-06-16 |
 | Cloudflare R2 | Active | S3-compatible object storage backend for `/storage/*` redirects and any future object writes | `server/_core/storageProxy.ts`, `server/storage.ts`, `server/_core/env.ts` | `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, optional `S3_PUBLIC_BASE_URL`, optional `S3_FORCE_PATH_STYLE` | Verified by successful write/delete health check against the configured bucket on 2026-06-16 |
 | Stripe | Active in configuration | Provider introduction-fee checkout, webhook verification, payment persistence, and payment-triggered release flow | `server/lib/stripe.ts`, `server/stripeWebhook.ts`, `server/routers.ts`, `drizzle/schema.ts` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` | Verified as configured locally and in Vercel production; code paths confirmed; not live-charged in this audit step |
-| Resend | Active in configuration | Transactional emails to customers/providers and owner alerts | `server/lib/resend.ts`, `server/_core/notification.ts`, `server/routers.ts`, `server/stripeWebhook.ts`, `server/lib/qstash.ts` | `RESEND_API_KEY`, `OWNER_EMAIL` | Verified as configured locally and in Vercel production; code paths confirmed; no live send executed in this audit step |
+| Resend | Active in configuration | Transactional emails to customers/providers and owner alerts | `server/lib/resend.ts`, `server/_core/notification.ts`, `server/routers.ts`, `server/stripeWebhook.ts`, `server/lib/qstash.ts` | `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, `RESEND_REPLY_TO`, `OWNER_EMAIL` | Verified on 2026-06-19: API key authenticates, account currently has zero verified domains, code now supports the shared onboarding sender until a custom domain is verified |
 | Upstash QStash | Active in configuration | Delayed jobs for provider timeout, payment deadline, and cleanup calls; signature verification for queued callbacks | `server/lib/qstash.ts`, `server/_core/jobs.ts`, `server/routers.ts`, `vercel.json` | `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `CRON_SECRET`, optional `INTERNAL_JOB_SECRET`, `APP_URL` | Verified as configured locally and in Vercel production; publish/verify code paths confirmed; no live publish executed in this audit step |
 
 ## Verified platform state
@@ -109,6 +109,19 @@ Connection modes:
 
 - Marketplace transaction emails in `server/lib/resend.ts`
 - Owner/operator alert emails in `server/_core/notification.ts`
+
+Current verified state:
+
+- Resend API key is valid
+- Resend account currently has zero verified domains
+- The app now supports two explicit sender modes:
+- shared onboarding sender for immediate working delivery
+- custom branded sender after domain verification
+
+Operational rule:
+
+- If `RESEND_FROM_ADDRESS` uses your own domain, verify that domain in Resend first.
+- If the domain is not yet verified, keep `RESEND_FROM_ADDRESS` on `onboarding@resend.dev`.
 
 Important note:
 
@@ -206,6 +219,6 @@ Important note:
 ## Immediate follow-up items
 
 - Re-verify live TiDB connectivity from the current machine before treating the database as healthy.
-- Fix or remove the stale OAuth import in `api/index.ts`.
+- Decide when to switch Resend from the onboarding sender to a verified branded sender.
 - Keep preview secretless until a dedicated preview stack exists.
 - Remove any remaining Redis env vars from local secret files if they are still present from earlier experiments.

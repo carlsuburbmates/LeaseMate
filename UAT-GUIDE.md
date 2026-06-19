@@ -1,6 +1,6 @@
 # LeaseMate — User Acceptance Testing (UAT) Guide
 
-**Version:** 1.1 · **Environment:** Local / Vercel Test · **Date:** 2026-06-14  
+**Version:** 1.2 · **Environment:** Local / Vercel Test · **Date:** 2026-06-19  
 **Local URL:** http://localhost:3000  
 **Vercel URL:** https://lease-mate-carlitos-projects-a62ff78f.vercel.app  
 **GitHub:** https://github.com/carlsuburbmates/LeaseMate
@@ -95,11 +95,11 @@ If you need to change an existing tester’s role, update it through the Ops Cen
 | Step | Action | Expected Result |
 |---|---|---|
 | A1 | Open `/login` and sign in as Alex Chen | Customer Dashboard shown |
-| A2 | Click "New Move Request" | Move-Out Cart wizard opens |
+| A2 | Click "New Cart" | Move-Out Cart wizard opens |
 | A3 | Enter property details | Form validates; "Next" button enabled |
 | A4 | Select services | Services added to cart |
-| A5 | Review cart and click "Submit Request" | Request submitted; confirmation screen shown |
-| A6 | Navigate to "My Requests" | Submitted request appears with status "submitted" |
+| A5 | Review cart and click "Submit Request" | Request submitted; customer is redirected to `/requests/:id` |
+| A6 | Navigate to "My Requests" | Submitted request appears and links back to the same `/requests/:id` route |
 
 ### Flow B — Provider: View and Accept an Opportunity
 
@@ -109,10 +109,10 @@ If you need to change an existing tester’s role, update it through the Ops Cen
 |---|---|---|
 | B1 | Sign in as Jordan Smith | Provider Dashboard shown |
 | B2 | Navigate to "Opportunities" | Pending invitations shown |
-| B3 | Click an invitation | Invitation detail page opens |
-| B4 | Click "Accept & Pay Introduction Fee" | Stripe Checkout opens |
-| B5 | Enter test card `4242 4242 4242 4242` | Payment succeeds; redirected back to app |
-| B6 | Return to Opportunities | Invitation status updates to "accepted" |
+| B3 | Review a pending opportunity card | Suburb, property summary, countdown, and introduction fee render; full address remains hidden |
+| B4 | Click "Accept & Pay" | Invitation is accepted and Stripe Checkout opens |
+| B5 | Enter test card `4242 4242 4242 4242` | Payment succeeds; redirected back to the provider billing flow |
+| B6 | Return to Opportunities and Billing | The opportunity leaves the pending list, billing history updates, and paid opportunities show address release state |
 
 ### Flow C — Provider: Decline an Opportunity
 
@@ -121,9 +121,9 @@ If you need to change an existing tester’s role, update it through the Ops Cen
 | Step | Action | Expected Result |
 |---|---|---|
 | C1 | Navigate to "Opportunities" | Pending invitations listed |
-| C2 | Click an invitation | Detail page opens |
-| C3 | Click "Decline" | Confirmation prompt shown |
-| C4 | Confirm decline | Status updates to "declined" |
+| C2 | Use the "Decline" action on a pending opportunity card | Decline action is available inline |
+| C3 | Click "Decline" | Mutation runs without leaving the dashboard |
+| C4 | Confirm decline | Opportunity status updates to `declined` and leaves the pending list |
 
 ### Flow D — Operator: Review Requests and Manage Providers
 
@@ -156,11 +156,11 @@ Verify receipt in the configured test inbox or Resend dashboard.
 
 | Trigger | Email Template | Recipient |
 |---|---|---|
-| Customer submits move request | Move Request Submitted | Customer |
-| Provider invited to job | New Opportunity Available | Provider |
-| Provider accepts + pays | Introduction Fee Paid | Provider + Operator |
-| Customer detail release | Contact Details Released | Customer |
-| Exception raised | Exception Alert | Operator |
+| Customer submits move request | Request confirmed | Customer |
+| Customer submits move request | New Cart Submission alert | Owner inbox (`OWNER_EMAIL`) |
+| Provider accepts + pays | Payment confirmed | Provider |
+| Provider accepts + pays | Provider matched | Customer |
+| Critical exception / automation alert path | Owner alert notification | Owner inbox (`OWNER_EMAIL`) |
 
 ---
 

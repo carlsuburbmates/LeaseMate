@@ -9,7 +9,8 @@ The project is a Vite + React + Express monolith managed by `pnpm`.
 ### Prerequisites
 - Node.js (v20+)
 - `pnpm` (v9+)
-- A running MySQL/MariaDB database (or cloud equivalent like TiDB/PlanetScale)
+- A remote MySQL-compatible database. TiDB Cloud Starter is the canonical recommended setup.
+- Local MySQL/MariaDB is optional, but not the canonical target.
 - For launch-like file handling, a remote S3-compatible object store such as Cloudflare R2 or AWS S3
 
 ### Installation
@@ -21,7 +22,7 @@ The project is a Vite + React + Express monolith managed by `pnpm`.
    ```bash
    cp .env.example .env
    ```
-   *Note: Fill in the required keys in `.env`, specifically `DATABASE_URL`. For launch-like storage, also configure the `S3_*` variables.*
+   *Note: Fill in the required keys in `.env`, especially `DATABASE_URL`. For launch-like behavior, also configure `S3_*`, Stripe, and Resend values. Use `RESEND_FROM_ADDRESS=LeaseMate <onboarding@resend.dev>` until a custom sending domain is verified in Resend.*
 
 3. Push the database schema:
    ```bash
@@ -56,7 +57,7 @@ The project is a Vite + React + Express monolith managed by `pnpm`.
 
 ## 3. Architecture & Key Documentation
 
-The platform is designed to run in a fully automated state. The state machine, background jobs, and exception handling logic are strictly defined.
+The platform is designed around an automation-heavy workflow, but the canonical source of truth is the current implementation in the repo rather than an aspirational future state.
 
 For deep-dives into specific areas of the platform, refer to the following canonical documents:
 
@@ -94,9 +95,10 @@ Canonical environment policy:
 For a production-like environment, the intended runtime mix is:
 
 - **Database**: remote MySQL-compatible service
+- **Database**: remote MySQL-compatible service, with TiDB Cloud Starter as the canonical recommended setup
 - **File storage**: remote S3-compatible object storage via the `S3_*` env vars
 - **Payments**: Stripe
-- **Email**: Resend
+- **Email**: Resend, with `RESEND_FROM_ADDRESS` explicit in env management
 - **Delayed jobs**: QStash
 - **Daily cleanup**: Vercel Cron
 

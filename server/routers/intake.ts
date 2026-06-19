@@ -107,7 +107,7 @@ export const intakeRouter = router({
                 })
               : String(requestData?.moveOutDate ?? ""),
           serviceCount: items.length,
-          dashboardUrl: `${ENV.appUrl}/customer/requests/${input.requestId}`,
+          dashboardUrl: `${ENV.appUrl}/requests/${input.requestId}`,
         }).catch(() => {});
       }
 

@@ -1,6 +1,6 @@
 # LeaseMate Local Build Strategy
 
-Last updated: 2026-06-16
+Last updated: 2026-06-19
 
 This is the canonical local runbook for building and operating the full LeaseMate app on one machine, including:
 
@@ -51,7 +51,7 @@ For the most useful local build, use this stack:
 | Database | remote TiDB Cloud Starter | Shared persistent state without local DB maintenance |
 | Object storage | Cloudflare R2 | Matches launch-like file delivery path |
 | Payments | Stripe test mode | Supports real provider payment flow |
-| Email | Resend | Supports transactional notifications and owner alerts |
+| Email | Resend | Supports transactional notifications and owner alerts; use the onboarding sender until a custom domain is verified |
 | Delayed jobs | local in-process timers first | Simplest full-app local behavior |
 | Durable scheduler | QStash optional | Useful only when you specifically want remote delayed execution parity |
 
@@ -69,6 +69,7 @@ These are strongly recommended for launch-like behavior:
 - `STRIPE_WEBHOOK_SECRET`
 - `VITE_STRIPE_PUBLISHABLE_KEY`
 - `RESEND_API_KEY`
+- `RESEND_FROM_ADDRESS`
 - `S3_BUCKET`
 - `S3_REGION`
 - `S3_ENDPOINT`
@@ -77,6 +78,7 @@ These are strongly recommended for launch-like behavior:
 
 These are optional for local:
 
+- `RESEND_REPLY_TO`
 - `QSTASH_TOKEN`
 - `QSTASH_CURRENT_SIGNING_KEY`
 - `QSTASH_NEXT_SIGNING_KEY`
@@ -205,9 +207,25 @@ To verify the whole product locally, use this sequence.
 Only run these when the relevant service is configured.
 
 - Stripe: provider checkout + webhook flow
-- Resend: verify notification delivery
+- Resend: verify API key, sender mode, and notification delivery
 - R2: verify storage access path
 - QStash: verify remote delayed execution only if specifically needed
+
+## Email sender policy
+
+Use Resend in one of two explicit modes:
+
+### Mode A. Immediate working mode
+
+- `RESEND_FROM_ADDRESS="LeaseMate <onboarding@resend.dev>"`
+- works without a verified custom domain
+- best for local development and early remote verification
+
+### Mode B. Branded production mode
+
+- `RESEND_FROM_ADDRESS="LeaseMate <notifications@your-domain>"`
+- requires that the sending domain is verified in Resend first
+- should only be used after verification is complete
 
 ## Local automation strategy
 

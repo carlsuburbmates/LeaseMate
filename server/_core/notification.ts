@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
-import { FROM_ADDRESS } from "../lib/resend";
+import { getFromAddress } from "../lib/resend";
 
 export type NotificationPayload = {
   title: string;
@@ -78,7 +78,7 @@ export async function notifyOwner(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: FROM_ADDRESS,
+        from: getFromAddress(),
         to: [ENV.ownerEmail],
         subject: title,
         html: buildOwnerEmailHtml({ title, content }),

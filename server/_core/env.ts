@@ -14,6 +14,12 @@ export const ENV = {
   get resendApiKey() {
     return process.env.RESEND_API_KEY ?? "";
   },
+  get resendFromAddress() {
+    return process.env.RESEND_FROM_ADDRESS ?? "LeaseMate <onboarding@resend.dev>";
+  },
+  get resendReplyTo() {
+    return process.env.RESEND_REPLY_TO ?? "support@leasemate.com.au";
+  },
   get cronSecret() {
     return process.env.CRON_SECRET ?? "";
   },
