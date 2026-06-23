@@ -36,7 +36,6 @@ app.use(
 app.get("*", (req, res) => {
   if (
     !req.path.startsWith("/api/") &&
-    !req.path.startsWith("/manus-storage/") &&
     !req.path.startsWith("/storage/")
   ) {
     res.status(404).json({ error: "Not found" });

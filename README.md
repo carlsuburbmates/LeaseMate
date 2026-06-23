@@ -11,11 +11,13 @@ In the canonical LeaseMate setup, `remote` includes GitHub, Vercel, TiDB Cloud S
 
 ## 1. Local Development Setup
 
-The project is a Vite + React + Express monolith managed by `pnpm`.
+The project is a Vite + React + Express monolith managed by `pnpm`, with local
+database-backed login, S3-compatible storage, and optional QStash-backed jobs
+that mirror the Vercel deployment path.
 
 ### Prerequisites
 - Node.js (v20+)
-- `pnpm` (v9+)
+- `pnpm` (v10+)
 - A remote MySQL-compatible database. TiDB Cloud Starter is the canonical recommended setup.
 - Local MySQL/MariaDB is optional, but not the canonical target.
 - For launch-like file handling, a remote S3-compatible object store such as Cloudflare R2 or AWS S3
@@ -70,7 +72,7 @@ For deep-dives into specific areas of the platform, refer to the following canon
 
 - **[LOCAL_BUILD_STRATEGY.md](./LOCAL_BUILD_STRATEGY.md)**: The canonical local runbook for the full app, including ops.
 - **[DDD_CONTEXT_MAP.md](./DDD_CONTEXT_MAP.md)**: The canonical bounded-context map, contract ownership matrix, and anti-corruption rules.
-- **[INTEGRATIONS.md](./INTEGRATIONS.md)**: The canonical register of verified integrations, connection points, and non-canonical leftovers.
+- **[INTEGRATIONS.md](./INTEGRATIONS.md)**: The canonical register of verified integrations, core tools/techs, connection points, and non-canonical leftovers.
 - **[UAT-GUIDE.md](./UAT-GUIDE.md)**: Step-by-step user acceptance testing flows for all three user roles (Customer, Provider, Operator).
 - **[MIGRATION_PLAN.md](./MIGRATION_PLAN.md)**: The current runtime status, external dependency checklist, and local development notes.
 - **Code paths**: `server/lib/qstash.ts`, `server/stripeWebhook.ts`, and `server/routers/*` are the canonical automation and workflow implementation.
@@ -89,7 +91,10 @@ pnpm run start
 ```
 
 **Vercel Deployment:**
-The project is configured for Vercel deployment. Ensure your Vercel project is linked (`vercel link`) and push to the `main` branch to trigger a deployment. Environment variables must be configured in the Vercel dashboard.
+The project is configured for Vercel deployment. Ensure your Vercel project is
+linked (`vercel link`) and push to the `main` branch to trigger a deployment.
+The deploy entrypoint is `api/index.ts`, and environment variables must be
+configured in the Vercel dashboard.
 
 Canonical environment policy:
 

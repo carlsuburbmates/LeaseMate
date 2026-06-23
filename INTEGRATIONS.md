@@ -1,6 +1,6 @@
 # LeaseMate Canonical Integration Register
 
-Last updated: 2026-06-19
+Last updated: 2026-06-24
 
 This file is the canonical source of truth for external integrations in LeaseMate.
 
@@ -41,6 +41,33 @@ That includes:
 - Do not assume an integration is active just because keys exist in `.env` or Vercel.
 - When one platform connects in more than one way, document each connection separately here.
 - Do not use the untracked duplicate folder as a source of truth. The git-tracked working copy is the canonical repo.
+
+## Core tech stack and tooling
+
+These are the non-negotiable tools and techs that make the website run and ship.
+
+| Layer | Tool / tech | Purpose | Status | Verification |
+|---|---|---|---|---|
+| Source control | GitHub | Canonical repo hosting and PR workflow | Active | Repo is tracked as `carlsuburbmates/leasemate` |
+| Package manager | pnpm 10.4.1 | Dependency management and scripts | Active | `packageManager` in `package.json`, `pnpm` dev dependency pinned |
+| Language | TypeScript 5.9.3 | Type safety across client/server/shared code | Active | `tsconfig.json`, `check` script, repo compiles with `tsc --noEmit` |
+| Frontend build | Vite 7.3.5 | Client build pipeline and dev server | Active | `package.json` scripts, `client/index.html` entrypoint |
+| UI runtime | React 19.2.1 | Browser UI rendering | Active | `client/src` application tree |
+| Server runtime | Express 4.21.2 | HTTP API and Vercel serverless entrypoint | Active | `server/_core/index.ts`, `api/index.ts` |
+| Typed RPC | tRPC 11.x | End-to-end typed client/server calls | Active | Router wiring in `server/routers/*` and client RPC setup |
+| ORM / query layer | Drizzle ORM + mysql2 | Database access and migrations | Active | `server/db.ts`, `drizzle.config.ts`, `drizzle/schema.ts` |
+| Authentication | JWT + cookie session | Local database-backed login | Active | `server/_core/sdk.ts`, `/login`, `JWT_SECRET` |
+| Payments | Stripe | Provider introduction-fee checkout + webhook flow | Active | `server/lib/stripe.ts`, `server/stripeWebhook.ts` |
+| Email | Resend | Transactional mail and owner alerts | Active in configuration | `server/lib/resend.ts`, `server/_core/notification.ts` |
+| Storage | AWS SDK S3 + Cloudflare R2 | Remote object storage with local fallback | Active | `server/storage.ts`, `server/_core/storageProxy.ts` |
+| Delayed jobs | Upstash QStash | Durable delayed execution and callback signing | Active in configuration | `server/lib/qstash.ts`, `vercel.json`, `CRON_SECRET` |
+| Deployment | Vercel | Frontend hosting, API runtime, and cron | Active | `vercel.json`, `api/index.ts` |
+| Testing | Vitest | Automated test suite | Active | `package.json` `test` script, existing server tests |
+| Build tooling | esbuild | Server bundling for production | Active | `package.json` `build` script |
+| Formatting | Prettier | Repository formatting | Active | `package.json` `format` script |
+| Dev runtime | tsx | Local watch-mode server process | Active | `package.json` `dev` script |
+| Optional analytics | Umami-style script | Client analytics when env vars are present | Optional | `client/index.html` only injects when both analytics env vars exist |
+| Typography asset | Google Fonts | UI font loading | Active but non-critical | `client/index.html` preconnects and loads Inter |
 
 ## Verified active integrations
 
@@ -198,6 +225,7 @@ Important note:
 - Vercel serves the built frontend from `dist/public`
 - Vercel runs the API layer from `api/index.ts`
 - Vercel cron hits `/api/jobs/stale-request-cleanup`
+- Google Fonts loads Inter from the browser at runtime
 
 ### Authentication
 
