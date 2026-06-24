@@ -35,6 +35,10 @@ import { ENV } from "../_core/env";
 import { providerProcedure } from "./shared";
 
 export const providerRouter = router({
+  signupProfile: protectedProcedure.query(async ({ ctx }) => {
+    return getProviderProfile(ctx.user.id);
+  }),
+
   myProfile: providerProcedure.query(async ({ ctx }) => {
     return getProviderProfile(ctx.user.id);
   }),
@@ -53,10 +57,19 @@ export const providerRouter = router({
     .mutation(async ({ ctx, input }) => {
       const existing = await getProviderProfile(ctx.user.id);
       if (existing) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Provider profile already exists.",
+        await updateProviderProfile(existing.id, input);
+        await setUserRole(ctx.user.id, "provider");
+
+        await createAuditEvent({
+          eventType: "provider.profile_upserted",
+          entityType: "provider_profile",
+          entityId: existing.id,
+          actorType: "provider",
+          actorId: ctx.user.id,
+          description: `Provider profile updated from signup: ${input.businessName}`,
         });
+
+        return { id: existing.id, updated: true };
       }
 
       const result = await createProviderProfile({ userId: ctx.user.id, ...input });
@@ -71,7 +84,7 @@ export const providerRouter = router({
         description: `Provider registered: ${input.businessName}`,
       });
 
-      return { id: Number((result as any).insertId) };
+      return { id: Number((result as any).insertId), updated: false };
     }),
 
   updateProfile: providerProcedure
