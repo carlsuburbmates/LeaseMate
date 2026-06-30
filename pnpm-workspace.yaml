@@ -4,11 +4,17 @@ packages:
   - .
 
 # pnpm v10+ overrides (moved from package.json "pnpm.overrides" field)
-# Note: patchedDependencies must remain in package.json "pnpm" field for pnpm v10.
+# pnpm v11 reads both overrides and patchedDependencies from this file.
+patchedDependencies:
+  wouter@3.7.1: patches/wouter@3.7.1.patch
+
+allowBuilds:
+  esbuild: true
+
 overrides:
   tailwindcss>nanoid: "3.3.7"
   "@babel/core": "7.29.7"
   esbuild: "0.28.1"
-  lodash: "4.17.23"
+  lodash: "4.18.0"
   path-to-regexp: "0.1.13"
-  qs: "6.14.2"
+  qs: "6.15.2"
