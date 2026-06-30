@@ -109,16 +109,13 @@ temp/
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 
-# Manus version file (auto-generated, not part of source)
-client/public/__manus__/version.json
+# Legacy platform-generated files
 .project-config.json
 .vercel
 .env*
 !.env.example
 
-# Local dev storage fallback (files uploaded when Forge is not configured)
+# Local dev storage fallback (files uploaded when remote object storage is not configured)
 uploads/
 
-# Manus debug log collector output
-.manus-logs/
 .env*.local

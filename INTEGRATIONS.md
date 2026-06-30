@@ -209,8 +209,8 @@ Important note:
 
 | Integration | State | Evidence |
 |---|---|---|
-| Manus Forge | Removed from production env and not part of the intended runtime | Legacy Forge env vars were removed from Vercel production; no canonical app flow should depend on them |
-| Manus OAuth | Not canonical | Authentication is now local JWT + database backed through `/login` and `server/_core/sdk.ts` |
+| Legacy platform API layer | Removed from production env and not part of the intended runtime | Legacy platform env vars were removed from Vercel production; no canonical app flow should depend on them |
+| Legacy sandbox OAuth flow | Not canonical | Authentication is now local JWT + database backed through `/login` and `server/_core/sdk.ts` |
 | Upstash Redis | Not canonical | No runtime code reads `REDIS_URL`, `UPSTASH_REDIS_REST_URL`, or `UPSTASH_REDIS_REST_TOKEN`; these were removed from canonical env management |
 | Gmail API | Not connected to the application runtime | Gmail may be used operationally as the owner inbox, but the app does not call Gmail APIs |
 

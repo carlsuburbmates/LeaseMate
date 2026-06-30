@@ -2,7 +2,7 @@
 
 ## Current Status
 
-As of 2026-06-14, LeaseMate runs without Manus OAuth or Manus Forge in the active runtime.
+As of 2026-06-14, LeaseMate runs without any legacy sandbox-specific OAuth or platform API dependencies in the active runtime.
 
 The project now supports a practical local workflow:
 

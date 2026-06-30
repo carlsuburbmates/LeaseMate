@@ -21,7 +21,7 @@ Do not treat this older folder as the working repo:
 ## Important Context
 
 - This codebase is a production-style marketplace workflow, not a greenfield prototype.
-- The major Manus-specific noise has already been removed or isolated.
+- The major legacy template and platform-specific noise has already been removed or isolated.
 - The canonical integration map is in `INTEGRATIONS.md`.
 - The canonical domain/context map is in `DDD_CONTEXT_MAP.md`.
 - The canonical local operating guide is in `LOCAL_BUILD_STRATEGY.md`.
