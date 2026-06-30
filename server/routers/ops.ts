@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
-import { ENV } from "../_core/env";
-import { notifyOwner } from "../_core/notification";
-import { router } from "../_core/trpc";
+import { ENV } from "../_core/env.js";
+import { notifyOwner } from "../_core/notification.js";
+import { router } from "../_core/trpc.js";
 import {
   createAuditEvent,
   createException,
@@ -27,14 +27,17 @@ import {
   updateIntroductionFee,
   updateMoveRequest,
   updateProviderProfile,
-} from "../db";
-import { notifyOperatorCriticalException } from "../lib/qstash";
-import { sendProviderRefundApproved } from "../lib/resend";
+} from "../db.js";
+import {
+  notifyOperatorCriticalException,
+  triggerProviderApprovalEvaluation,
+} from "../lib/qstash.js";
+import { sendProviderRefundApproved } from "../lib/resend.js";
 import {
   EXCEPTION_CODES,
   EXCEPTION_META,
   operatorProcedure,
-} from "./shared";
+} from "./shared.js";
 
 export const opsRouter = router({
   dashboard: operatorProcedure.query(() => getOpsDashboardStats()),
@@ -162,7 +165,7 @@ export const opsRouter = router({
         refundedAt: new Date(),
       });
 
-      const { getCustomerRelease } = await import("../db");
+      const { getCustomerRelease } = await import("../db.js");
       const release = await getCustomerRelease(fee.id);
       if (release?.customerId) {
         await flagUser(
@@ -256,6 +259,76 @@ export const opsRouter = router({
         actorId: ctx.user.id,
         description: `Operator reactivated provider #${input.providerId}`,
       });
+      return { success: true };
+    }),
+
+  approveProvider: operatorProcedure
+    .input(
+      z.object({
+        providerId: z.number(),
+        reason: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await updateProviderProfile(input.providerId, {
+        status: "active",
+        approvalMode: "manual",
+        eligibilityStatus: "eligible",
+        approvedAt: new Date(),
+        approvedBy: ctx.user.id,
+        approvalReason:
+          input.reason?.trim() ||
+          "Manually approved by an operator.",
+        rejectionReason: null,
+      });
+
+      await createAuditEvent({
+        eventType: "provider.manually_approved",
+        entityType: "provider_profile",
+        entityId: input.providerId,
+        actorType: "operator",
+        actorId: ctx.user.id,
+        description: `Operator manually approved provider #${input.providerId}.`,
+      });
+
+      return { success: true };
+    }),
+
+  rejectProvider: operatorProcedure
+    .input(
+      z.object({
+        providerId: z.number(),
+        reason: z.string().min(5),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await updateProviderProfile(input.providerId, {
+        status: "pending",
+        approvalMode: "manual",
+        eligibilityStatus: "needs_review",
+        approvedAt: null,
+        approvedBy: null,
+        autoApprovedAt: null,
+        approvalReason: null,
+        rejectionReason: input.reason.trim(),
+      });
+
+      await createAuditEvent({
+        eventType: "provider.manually_rejected",
+        entityType: "provider_profile",
+        entityId: input.providerId,
+        actorType: "operator",
+        actorId: ctx.user.id,
+        description: `Operator manually held provider #${input.providerId}: ${input.reason.trim()}`,
+      });
+
+      return { success: true };
+    }),
+
+  reevaluateProviderApproval: operatorProcedure
+    .input(z.object({ providerId: z.number() }))
+    .mutation(async ({ input }) => {
+      await triggerProviderApprovalEvaluation(input.providerId);
       return { success: true };
     }),
 

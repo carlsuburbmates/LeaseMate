@@ -75,6 +75,25 @@ export const providerProfiles = mysqlTable("provider_profiles", {
   contactEmail: varchar("contactEmail", { length: 320 }),
   suburb: varchar("suburb", { length: 100 }),
   status: mysqlEnum("status", ["active", "paused", "suspended", "pending"]).default("pending").notNull(),
+  approvalMode: mysqlEnum("approvalMode", ["auto", "manual"]).default("auto").notNull(),
+  eligibilityStatus: mysqlEnum("eligibilityStatus", ["eligible", "ineligible", "needs_review"]).default("ineligible").notNull(),
+  eligibilityChecks: json("eligibilityChecks").$type<{
+    activeProductCount: number;
+    summary: string;
+    unmetRequirementKeys: string[];
+    requirements: Array<{
+      key: string;
+      label: string;
+      passed: boolean;
+      detail: string;
+    }>;
+  }>(),
+  lastEligibilityEvaluatedAt: timestamp("lastEligibilityEvaluatedAt"),
+  autoApprovedAt: timestamp("autoApprovedAt"),
+  approvedAt: timestamp("approvedAt"),
+  approvedBy: int("approvedBy"),
+  approvalReason: text("approvalReason"),
+  rejectionReason: text("rejectionReason"),
   pauseReason: text("pauseReason"),
   maxJobsPerWeek: int("maxJobsPerWeek").default(10).notNull(),
   stripeCustomerId: varchar("stripeCustomerId", { length: 100 }),

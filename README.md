@@ -70,12 +70,26 @@ The platform is designed around an automation-heavy workflow, but the canonical 
 
 For deep-dives into specific areas of the platform, refer to the following canonical documents:
 
+- **[LAUNCH_GATE.md](./LAUNCH_GATE.md)**: The single canonical pass/fail gate for deciding whether a change is actually complete enough to treat as done.
 - **[LOCAL_BUILD_STRATEGY.md](./LOCAL_BUILD_STRATEGY.md)**: The canonical local runbook for the full app, including ops.
 - **[DDD_CONTEXT_MAP.md](./DDD_CONTEXT_MAP.md)**: The canonical bounded-context map, contract ownership matrix, and anti-corruption rules.
 - **[INTEGRATIONS.md](./INTEGRATIONS.md)**: The canonical register of verified integrations, core tools/techs, connection points, and non-canonical leftovers.
 - **[UAT-GUIDE.md](./UAT-GUIDE.md)**: Step-by-step user acceptance testing flows for all three user roles (Customer, Provider, Operator).
 - **[MIGRATION_PLAN.md](./MIGRATION_PLAN.md)**: The current runtime status, external dependency checklist, and local development notes.
 - **Code paths**: `server/lib/qstash.ts`, `server/stripeWebhook.ts`, and `server/routers/*` are the canonical automation and workflow implementation.
+
+Verification responsibility split:
+
+- use `LOCAL_BUILD_STRATEGY.md` to run the product locally
+- use `UAT-GUIDE.md` to execute role-based flows
+- use `INTEGRATIONS.md` to confirm integration truth
+- use `LAUNCH_GATE.md` for the final completion decision
+
+Provider onboarding note:
+
+- provider accounts now begin in `pending`
+- approval is evaluated automatically from profile completeness plus at least one active product
+- pending providers cannot act on opportunities until they become `active`
 
 ## 4. Build and Deployment
 

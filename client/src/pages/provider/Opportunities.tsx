@@ -27,6 +27,7 @@ function Countdown({ expiresAt }: { expiresAt: Date }) {
 
 export default function ProviderOpportunities() {
   const { isAuthenticated } = useAuth();
+  const { data: profile } = trpc.provider.myProfile.useQuery(undefined, { enabled: isAuthenticated });
   const { data: opportunities, isLoading, refetch } = trpc.provider.myOpportunities.useQuery(undefined, { enabled: isAuthenticated });
   const [checkoutLoading, setCheckoutLoading] = useState<number | null>(null);
 
@@ -72,6 +73,10 @@ export default function ProviderOpportunities() {
   const past = (opportunities as any[])?.filter((o: any) =>
     o.status === "declined" || o.status === "expired" || o.status === "cancelled" || o.feeStatus === "paid"
   ) ?? [];
+  const p = profile as any;
+  const unmetRequirements =
+    p?.eligibilityChecks?.requirements?.filter((requirement: any) => !requirement.passed) ??
+    [];
 
   return (
     <PublicLayout>
@@ -89,9 +94,30 @@ export default function ProviderOpportunities() {
           <p className="text-sm text-[#9B9B9B] mt-1">Review and respond within 48 hours. Full address released after payment.</p>
         </div>
 
+        {p && p.status !== "active" && (
+          <div className="bg-[#F8F7F4] rounded-xl border border-stone-200 p-5 mb-8">
+            <div className="text-sm font-semibold text-[#2C2C2C] mb-1">Provider approval required</div>
+            <p className="text-sm text-[#6B6B6B] mb-3">
+              Your account must be active before you can respond to new opportunities or pay introduction fees.
+            </p>
+            {unmetRequirements.length > 0 && (
+              <ul className="text-xs text-[#6B6B6B] space-y-1">
+                {unmetRequirements.map((requirement: any) => (
+                  <li key={requirement.key}>- {requirement.detail}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="animate-pulse space-y-3">
             {[1,2].map(i => <div key={i} className="h-32 bg-stone-100 rounded-xl" />)}
+          </div>
+        ) : p && p.status !== "active" ? (
+          <div className="bg-white rounded-xl border border-stone-200 p-10 text-center mb-10">
+            <CheckCircle2 size={32} className="text-stone-300 mx-auto mb-3" />
+            <p className="text-sm text-[#9B9B9B]">Opportunities will unlock once your provider account is approved.</p>
           </div>
         ) : (
           <>

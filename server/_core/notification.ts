@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
-import { ENV } from "./env";
-import { getFromAddress } from "../lib/resend";
+import { ENV } from "./env.js";
+import { getFromAddress } from "../lib/resend.js";
 
 export type NotificationPayload = {
   title: string;

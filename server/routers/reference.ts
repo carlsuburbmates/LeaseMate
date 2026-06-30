@@ -4,9 +4,9 @@ import {
   getProductsByCategory,
   getServiceCategories,
   searchSuburbs,
-} from "../db";
-import { publicProcedure, router } from "../_core/trpc";
-import { EXCEPTION_META, operatorProcedure } from "./shared";
+} from "../db.js";
+import { publicProcedure, router } from "../_core/trpc.js";
+import { EXCEPTION_META, operatorProcedure } from "./shared.js";
 
 export const referenceRouter = router({
   suburbs: publicProcedure.query(() => getAllSuburbs()),

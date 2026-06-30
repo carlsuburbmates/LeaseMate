@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
 import PublicLayout from "@/components/PublicLayout";
-import { Briefcase, Package, DollarSign, User, ArrowRight, Bell } from "lucide-react";
+import { Briefcase, Package, DollarSign, User, ArrowRight, Bell, ShieldCheck } from "lucide-react";
 
 const NAV = [
   { href: "/provider/opportunities", label: "Opportunities", icon: Bell, desc: "View and respond to new job opportunities" },
@@ -49,19 +49,67 @@ export default function ProviderDashboard() {
     );
   }
 
-  const pendingCount = (opportunities as any[])?.filter((o: any) => o.status === "pending").length ?? 0;
+  const p = profile as any;
+  const approval = p.eligibilityChecks as any;
+  const unmetRequirements =
+    approval?.requirements?.filter((requirement: any) => !requirement.passed) ??
+    [];
+  const pendingCount =
+    p.status === "active"
+      ? (opportunities as any[])?.filter((o: any) => o.status === "pending").length ?? 0
+      : 0;
 
   return (
     <PublicLayout>
       <div className="max-w-4xl mx-auto px-6 py-16">
         <div className="mb-10">
           <div className="text-xs font-semibold uppercase tracking-widest text-[#4A7C7E] mb-2">Provider Dashboard</div>
-          <h1 className="text-3xl font-semibold text-[#2C2C2C] tracking-tight">{(profile as any).businessName}</h1>
+          <h1 className="text-3xl font-semibold text-[#2C2C2C] tracking-tight">{p.businessName}</h1>
           <p className="text-[#9B9B9B] text-sm mt-1">
-            Status: <span className={`font-medium ${(profile as any).status === "active" ? "text-green-600" : "text-amber-600"}`}>{(profile as any).status}</span>
-            {" · "}Max {(profile as any).maxJobsPerWeek} jobs/week
+            Status: <span className={`font-medium ${p.status === "active" ? "text-green-600" : p.status === "pending" ? "text-amber-600" : "text-[#9B9B9B]"}`}>{p.status}</span>
+            {" · "}Max {p.maxJobsPerWeek} jobs/week
           </p>
         </div>
+
+        {p.status !== "active" && (
+          <div className="bg-[#F8F7F4] border border-stone-200 rounded-xl p-5 mb-6">
+            <div className="flex items-start gap-3">
+              <ShieldCheck size={18} className="text-[#4A7C7E] mt-0.5" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-[#2C2C2C] mb-1">
+                  {p.approvalMode === "manual"
+                    ? "Provider approval is waiting for operator review"
+                    : "Provider approval is still in progress"}
+                </div>
+                <p className="text-sm text-[#6B6B6B] mb-3">
+                  {approval?.summary ?? "Finish the onboarding requirements to activate your provider account."}
+                </p>
+                {p.rejectionReason && (
+                  <p className="text-xs text-[#8A5A00] mb-3">
+                    Last operator note: {p.rejectionReason}
+                  </p>
+                )}
+                {unmetRequirements.length > 0 && (
+                  <div className="text-xs text-[#6B6B6B] mb-3">
+                    Missing now: {unmetRequirements.map((requirement: any) => requirement.label).join(", ")}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/provider/profile">
+                    <Button size="sm" className="rounded-md bg-[#2C2C2C] hover:bg-[#1a1a1a] text-white">
+                      Update Profile
+                    </Button>
+                  </Link>
+                  <Link href="/provider/products">
+                    <Button size="sm" variant="outline" className="rounded-md border-stone-200">
+                      Manage Products
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {pendingCount > 0 && (
           <div className="bg-[#4A7C7E]/10 border border-[#4A7C7E]/20 rounded-xl p-4 mb-6 flex items-center justify-between">

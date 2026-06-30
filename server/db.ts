@@ -18,8 +18,8 @@ import {
   type InsertMoveRequest,
   type InsertProviderProfile,
   type InsertServiceProduct,
-} from "../drizzle/schema";
-import { ENV } from "./_core/env";
+} from "../drizzle/schema.js";
+import { ENV } from "./_core/env.js";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -159,6 +159,13 @@ export async function updateProduct(id: number, data: Partial<InsertServiceProdu
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.update(serviceProducts).set(data).where(eq(serviceProducts.id, id));
+}
+
+export async function getProductById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(serviceProducts).where(eq(serviceProducts.id, id)).limit(1);
+  return result[0];
 }
 
 export async function deleteProduct(id: number) {

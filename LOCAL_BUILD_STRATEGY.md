@@ -182,6 +182,10 @@ Use these entrypoints once the app is running.
 
 ## Full local verification strategy
 
+This section is for local execution evidence only.
+
+Use it to prove the app runs and the main flows work on one machine. Do not use this section as a second final completion gate. The final pass/fail decision belongs in [LAUNCH_GATE.md](/Users/carlg/Documents/AI-Coding/Local-leasemate/LAUNCH_GATE.md).
+
 To verify the whole product locally, use this sequence.
 
 ### Phase A. Platform health
@@ -202,10 +206,13 @@ To verify the whole product locally, use this sequence.
 ### Phase C. Provider path
 
 1. Sign in as a provider
-2. Open `/provider/opportunities`
-3. Accept an invitation
-4. If Stripe is configured, complete test checkout
-5. Confirm billing history and release behavior update
+2. Complete the provider profile with ABN, phone, contact email, and suburb
+3. Add at least one active product
+4. Confirm the provider account moves from `pending` to `active`
+5. Open `/provider/opportunities`
+6. Accept an invitation
+7. If Stripe is configured, complete test checkout
+8. Confirm billing history and release behavior update
 
 ### Phase D. Ops path
 

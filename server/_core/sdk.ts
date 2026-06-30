@@ -1,11 +1,10 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
-import { ForbiddenError } from "@shared/_core/errors";
+import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
+import { ForbiddenError } from "../../shared/_core/errors.js";
 import { parse as parseCookieHeader } from "cookie";
-import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
-import type { User } from "../../drizzle/schema";
-import * as db from "../db";
-import { ENV } from "./env";
+import type { User } from "../../drizzle/schema.js";
+import * as db from "../db.js";
+import { ENV } from "./env.js";
 
 // Utility function
 const isNonEmptyString = (value: unknown): value is string =>
@@ -15,6 +14,13 @@ export type SessionPayload = {
   openId: string;
   appId: string;
   name: string;
+};
+
+type SdkRequestLike = {
+  headers?: {
+    cookie?: string;
+  };
+  header?: (name: string) => string | undefined;
 };
 
 class SDKServer {
@@ -105,8 +111,9 @@ class SDKServer {
     }
   }
 
-  async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
-    const cookies = this.parseCookies(req.headers.cookie);
+  async authenticateRequest(req: SdkRequestLike): Promise<AuthenticatedUser> {
+    const cookieHeader = req.headers?.cookie ?? req.header?.("cookie");
+    const cookies = this.parseCookies(cookieHeader);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
 

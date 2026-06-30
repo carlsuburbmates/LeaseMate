@@ -11,6 +11,8 @@
 
 This guide covers the three test personas, pre-seeded test data, and the end-to-end verification flows for LeaseMate. Authentication is local and database-backed through `/login`.
 
+This guide is the canonical role-flow test surface, not the final completion gate. Use [LAUNCH_GATE.md](/Users/carlg/Documents/AI-Coding/Local-leasemate/LAUNCH_GATE.md) when deciding whether a change is actually complete enough to treat as done.
+
 ---
 
 ## 1. Test Accounts
@@ -108,6 +110,7 @@ If you need to change an existing tester’s role, update it through the Ops Cen
 | Step | Action | Expected Result |
 |---|---|---|
 | B1 | Sign in as Jordan Smith | Provider Dashboard shown |
+| B1a | Confirm the provider status is `active` | Opportunities are available only after approval |
 | B2 | Navigate to "Opportunities" | Pending invitations shown |
 | B3 | Review a pending opportunity card | Suburb, property summary, countdown, and introduction fee render; full address remains hidden |
 | B4 | Click "Accept & Pay" | Invitation is accepted and Stripe Checkout opens |
@@ -136,9 +139,21 @@ If you need to change an existing tester’s role, update it through the Ops Cen
 | D3 | Open a request | Property info and cart items shown |
 | D4 | Change status to "in_progress" | Status badge updates |
 | D5 | Navigate to "Providers" | Provider profiles listed |
-| D6 | Pause a provider | Reason captured; provider status changes to "paused" |
-| D7 | Reactivate the provider | Provider status returns to "active" |
-| D8 | Review "Exceptions", "System Health", and "Audit Log" | Data renders without auth or routing errors |
+| D6 | Re-check or manually approve a pending provider if needed | Approval state updates and audit trail records the action |
+| D7 | Pause a provider | Reason captured; provider status changes to "paused" |
+| D8 | Reactivate the provider | Provider status returns to "active" |
+| D9 | Review "Exceptions", "System Health", and "Audit Log" | Data renders without auth or routing errors |
+
+### Flow G — Provider: Complete Onboarding Approval
+
+**Persona:** New Provider
+
+| Step | Action | Expected Result |
+|---|---|---|
+| G1 | Sign in and create a provider profile | Provider status starts as `pending` |
+| G2 | Add ABN, phone, contact email, and suburb if missing | Profile saves successfully |
+| G3 | Add at least one product | Approval evaluation runs automatically |
+| G4 | Return to the dashboard | Provider status changes to `active` once all requirements pass |
 
 ### Flow E — Operator: Handle an Exception
 

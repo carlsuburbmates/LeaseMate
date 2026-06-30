@@ -19,11 +19,13 @@ The Customer is a tenant moving out of a property who needs multiple services co
 The Provider is a vetted local business offering specific services (e.g., a carpet cleaning company).
 
 **Provider Workflow:**
-1. **Onboarding:** The provider registers their business, sets their coverage zones (suburbs), and defines their maximum jobs per week.
-2. **Receiving Opportunities:** The provider sees pending opportunities sourced from existing `provider_invitations` records. In local UAT, these invitations are currently seeded rather than created by a live matching engine. Full customer address and contact details stay hidden until release.
-3. **Acceptance:** The provider views the `Opportunities` dashboard and clicks "Accept & Pay".
-4. **Payment:** The provider is immediately prompted to pay the Introduction Fee via Stripe Checkout.
-5. **Unlock:** Upon successful payment, the customer's full address and contact details are unlocked, and the provider receives a confirmation email.
+1. **Onboarding:** The provider registers their business, adds their ABN, phone, contact email, suburb, and at least one active product.
+2. **Approval Evaluation:** Every provider profile or product change triggers an immediate tracked approval evaluation task.
+3. **Activation:** Providers in `pending` status are auto-approved only when all onboarding requirements pass. Operator-held providers remain pending until manually approved.
+4. **Receiving Opportunities:** The provider sees pending opportunities sourced from existing `provider_invitations` records. In local UAT, these invitations are currently seeded rather than created by a live matching engine. Full customer address and contact details stay hidden until release.
+5. **Acceptance:** The provider views the `Opportunities` dashboard and clicks "Accept & Pay".
+6. **Payment:** The provider is immediately prompted to pay the Introduction Fee via Stripe Checkout.
+7. **Unlock:** Upon successful payment, the customer's full address and contact details are unlocked, and the provider receives a confirmation email.
 
 ### 1.3 The Operator
 The Operator is the platform administrator who monitors the system's health and resolves edge cases. In the current implementation, operator work is concentrated around exceptions, provider management, and manual review paths.
@@ -32,6 +34,7 @@ The Operator is the platform administrator who monitors the system's health and 
 1. **Monitoring:** The operator views the `OpsCenter` dashboard. The `SystemHealth` page shows the state of tracked automation tasks.
 2. **Exception Handling:** If automation fails or a business rule is breached (e.g., all providers decline a job), the system generates an `Exception`. The operator reviews the `ExceptionDetail`, makes a judgment call, and clicks "Resolve".
 3. **Provider Management:** The operator can manually pause or reactivate providers based on performance or disputes.
+4. **Provider Approval Overrides:** The operator can manually approve, hold, or re-check pending provider onboarding cases when automation alone is not enough.
 
 ## 2. The Current State Machine
 
@@ -50,15 +53,28 @@ The core value of LeaseMate is its automated orchestration. The system transitio
 3. **Invitation availability**:
    - *Current implementation note:* downstream provider invitations exist in the schema and provider flow, but local UAT currently relies on seeded invitations rather than a live runtime `matchProviders` path.
 4. **`provider.acceptOpportunity`**:
+   - *Guard:* Provider must already be `active`.
    - *Action:* System updates invitation status to `accepted`.
    - *Action:* System schedules a payment deadline check task.
-5. **`provider.createCheckoutSession`**:
+5. **`automation.provider_approval_evaluation`**:
+   - *Trigger:* provider signup, profile update, product add, product update, product delete, or operator re-check.
+   - *Action:* System evaluates the strict onboarding gate:
+     - business name present
+     - valid 11-digit ABN
+     - phone present
+     - contact email present
+     - suburb present
+     - at least 1 active product
+   - *Action:* System stores `eligibilityStatus`, `eligibilityChecks`, and `lastEligibilityEvaluatedAt`.
+   - *Action:* If the provider is still `pending` and `approvalMode = auto`, the system auto-activates the provider once all checks pass.
+6. **`provider.createCheckoutSession`**:
+   - *Guard:* Provider must already be `active`.
    - *Action:* System derives the category from the invitation's `move_request_item`.
    - *Action:* System creates a Stripe Checkout session and redirects the provider.
-6. **`stripeWebhook.checkout.session.completed`**:
+7. **`stripeWebhook.checkout.session.completed`**:
    - *Action:* System creates an `introduction_fees` record with status `paid`.
    - *Action:* System triggers `triggerCustomerDetailsRelease(invitationId)`.
-7. **`automation.customer_details_release`**:
+8. **`automation.customer_details_release`**:
    - *Action:* System creates or updates the `customer_releases` record with status `released`.
    - *Action:* System updates the `move_request_item` status to `details_released`.
    - *Action:* System sends "Payment confirmed" email to the provider and "Provider matched" email to the customer.
@@ -69,6 +85,7 @@ The platform relies on tracked automation tasks to enforce SLAs and clean up sta
 
 | Job ID | Trigger | Action | Escalation (Exception) |
 |---|---|---|---|
+| **JOB-00: Provider Approval Evaluation** | Provider profile or product mutation, or operator re-check | Evaluates onboarding requirements, stores eligibility details, and auto-activates eligible pending providers. | None. |
 | **JOB-01: Provider Timeout** | 48 hours after invitation sent | Marks a still-pending invitation as `expired`, updates the request item to `exception`, logs the timeout, and checks provider auto-pause rules. | Generates **EX-03 (Provider Timeout)**. |
 | **JOB-02: Payment Deadline** | 24 hours after provider accepts | Checks whether the introduction fee is paid. If not, marks the item as `exception` and records overdue state when a fee row exists. | Generates **EX-05** or **EX-06** depending on fee state. |
 | **JOB-04: Auto-Pause** | Runs after every timeout | Counts timeouts in the last 30 days. If >= 2, pauses the provider. | Operator is notified via Audit Log. |

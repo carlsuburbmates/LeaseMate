@@ -6,7 +6,7 @@
  * Defaults to Resend's shared onboarding sender until a custom domain is verified.
  * Brand: Charcoal #1C1C1E / Slate Teal #4A7C7E / Alabaster #F5F4F0 / Inter font
  */
-import { ENV } from "../_core/env";
+import { ENV } from "../_core/env.js";
 
 export function getFromAddress() {
   return ENV.resendFromAddress;

@@ -14,6 +14,7 @@ const BIG_6 = ["Removalist", "End-of-Lease Cleaning", "Carpet Cleaning", "Pest C
 
 export default function ProviderProducts() {
   const { isAuthenticated } = useAuth();
+  const { data: profile } = trpc.provider.myProfile.useQuery(undefined, { enabled: isAuthenticated });
   const { data: products, isLoading, refetch } = trpc.provider.myProducts.useQuery(undefined, { enabled: isAuthenticated });
   const { data: categories } = trpc.reference.categories.useQuery();
   const [showForm, setShowForm] = useState(false);
@@ -27,6 +28,9 @@ export default function ProviderProducts() {
     onSuccess: () => { toast.success("Product removed."); refetch(); },
     onError: (err: any) => toast.error(err.message),
   });
+
+  const p = profile as any;
+  const approval = p?.eligibilityChecks as any;
 
   return (
     <PublicLayout>
@@ -51,6 +55,12 @@ export default function ProviderProducts() {
             <Plus size={14} className="mr-2" /> Add Product
           </Button>
         </div>
+
+        {p?.status !== "active" && (
+          <div className="bg-[#F8F7F4] rounded-xl border border-stone-200 p-4 mb-6 text-sm text-[#6B6B6B]">
+            Approval requires at least one active product. Current count: {approval?.activeProductCount ?? 0}.
+          </div>
+        )}
 
         {showForm && (
           <div className="bg-white rounded-xl border border-[#4A7C7E]/30 p-6 mb-6">
@@ -127,9 +137,10 @@ export default function ProviderProducts() {
               <div key={p.id} className="bg-white rounded-xl border border-stone-200 p-5 flex items-center justify-between gap-4">
                 <div>
                   <div className="text-xs font-semibold text-[#4A7C7E] mb-1">{p.categoryName}</div>
-                  <div className="text-sm font-semibold text-[#2C2C2C]">{p.name}</div>
+                  <div className="text-sm font-semibold text-[#2C2C2C]">{p.title}</div>
                   {p.description && <div className="text-xs text-[#9B9B9B] mt-0.5">{p.description}</div>}
-                  {p.basePrice && <div className="text-xs text-[#6B6B6B] mt-1">${p.basePrice} {p.priceUnit}</div>}
+                  {p.priceAmount && <div className="text-xs text-[#6B6B6B] mt-1">${p.priceAmount} {p.priceType}</div>}
+                  <div className="text-xs text-[#9B9B9B] mt-1">{p.isActive ? "Active listing" : "Inactive listing"}</div>
                 </div>
                 <Button
                   size="sm"

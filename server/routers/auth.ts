@@ -1,10 +1,10 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME } from "../../shared/const.js";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { z } from "zod/v4";
-import { getSessionCookieOptions } from "../_core/cookies";
-import { sdk } from "../_core/sdk";
-import { publicProcedure, router } from "../_core/trpc";
+import { getSessionCookieOptions } from "../_core/cookies.js";
+import { sdk } from "../_core/sdk.js";
+import { publicProcedure, router } from "../_core/trpc.js";
 import {
   getUserByEmail,
   getUserById,
@@ -12,8 +12,8 @@ import {
   listUsers,
   setUserRole,
   upsertUser,
-} from "../db";
-import { LOCAL_AUTH_ROLES } from "./shared";
+} from "../db.js";
+import { LOCAL_AUTH_ROLES } from "./shared.js";
 
 export const authRouter = router({
   me: publicProcedure.query((opts) => opts.ctx.user),

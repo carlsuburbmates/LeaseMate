@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
-import { ENV } from "./_core/env";
+import { ENV } from "./_core/env.js";
 
 const LOCAL_UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 const STORAGE_ROUTE_PREFIX = "/storage";

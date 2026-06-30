@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
-import { notifyOwner } from "../_core/notification";
-import { router } from "../_core/trpc";
+import { notifyOwner } from "../_core/notification.js";
+import { router } from "../_core/trpc.js";
 import {
   createAuditEvent,
   createMoveRequest,
@@ -11,10 +11,10 @@ import {
   getMoveRequestsByCustomer,
   getServiceCategories,
   updateMoveRequest,
-} from "../db";
-import { ENV } from "../_core/env";
-import { sendCustomerRequestReceived } from "../lib/resend";
-import { CUSTOMER_STATUS_LABELS, customerProcedure } from "./shared";
+} from "../db.js";
+import { ENV } from "../_core/env.js";
+import { sendCustomerRequestReceived } from "../lib/resend.js";
+import { CUSTOMER_STATUS_LABELS, customerProcedure } from "./shared.js";
 
 export const intakeRouter = router({
   createRequest: customerProcedure

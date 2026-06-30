@@ -34,11 +34,11 @@ That means the system is centered on orchestration, entitlement release, and exc
 | Identity & Session | Local sign-in, session creation, cookie verification, request authentication | Session token shape, cookie policy, authenticated user resolution | `server/_core/sdk.ts`, `server/_core/cookies.ts`, `server/_core/context.ts`, `auth` router |
 | Reference Catalog | Stable vocabulary for suburbs and service categories | `suburbs`, `service_categories` | `drizzle/schema.ts`, `reference` router |
 | Customer Intake & Request Tracking | Customer request creation, cart composition, request submission, customer-facing status view | `move_requests`, customer-side request lifecycle, customer-safe labels | `intake` router, customer pages |
-| Provider Network & Offer Catalog | Provider onboarding, provider profile state, service products, capacity settings | `provider_profiles`, `service_products` | `provider` router, provider profile/products pages |
+| Provider Network & Offer Catalog | Provider onboarding, provider profile state, service products, capacity settings, provider approval requirements | `provider_profiles`, `service_products` | `provider` router, provider profile/products pages |
 | Invitation Orchestration | Provider opportunity lifecycle before payment, invitation state transitions, address masking rules | `provider_invitations`, item-level matching progression | `provider.myOpportunities`, invitation mutations, `AUTOMATION_PIPELINE.md` |
 | Billing & Access Release | Introduction-fee checkout, payment verification, release entitlement, refund state | `introduction_fees`, `customer_releases`, Stripe metadata mapping | `server/lib/stripe.ts`, `server/stripeWebhook.ts`, billing procedures |
 | Notifications & Alerts | Customer/provider emails and owner alerts | Email payloads, alert payloads, email templates | `server/lib/resend.ts`, `server/_core/notification.ts` |
-| Automation & SLA Enforcement | Timed jobs, delayed execution, retries, stale cleanup, job authorization | `automation_tasks`, timed job payloads, job auth headers | `server/lib/qstash.ts`, `server/_core/jobs.ts`, `vercel.json` cron |
+| Automation & SLA Enforcement | Timed jobs, delayed execution, retries, provider approval evaluation, stale cleanup, job authorization | `automation_tasks`, timed job payloads, job auth headers | `server/lib/qstash.ts`, `server/_core/jobs.ts`, `vercel.json` cron |
 | Operations, Exceptions & Audit | Manual oversight, exception taxonomy, provider pausing, refunds, traceability | `exceptions`, `audit_events`, operator workflow decisions | `ops` router, ops pages |
 | Platform Storage & Delivery | Static hosting, API runtime entry, object delivery, deployment environment rules | Vercel runtime boundary, `/storage/*` behavior, env policy | `api/index.ts`, `server/_core/storageProxy.ts`, `server/storage.ts`, `INTEGRATIONS.md` |
 
@@ -102,7 +102,7 @@ These are the anti-corruption boundaries between LeaseMate contexts and external
 | Session cookie payload and auth resolution | Identity & Session | All protected contexts | Backward compatible within a session lifetime; do not change silently |
 | Service category IDs, slugs, names, and ordering | Reference Catalog | Public Web, Customer Intake, Provider Network | Changes require coordinated seed and UI updates |
 | Customer request lifecycle statuses | Customer Intake & Request Tracking | Ops, customer UI, automation | Additive changes only unless all consumer labels are updated together |
-| Provider profile status and capacity fields | Provider Network & Offer Catalog | Invitation Orchestration, Ops | Treat as provider-domain contract; avoid ops-only shortcuts |
+| Provider profile status, approval, and capacity fields | Provider Network & Offer Catalog | Invitation Orchestration, Ops | Treat as provider-domain contract; avoid ops-only shortcuts |
 | Invitation lifecycle states | Invitation Orchestration | Provider UI, Billing, Automation, Ops | Centralize in orchestration rules before changing UI assumptions |
 | Introduction fee and release states | Billing & Access Release | Provider UI, Ops, Notifications | Stripe-facing changes must preserve internal entitlement semantics |
 | Exception codes `EX-01` to `EX-13` | Operations, Exceptions & Audit | Automation, ops UI, notifications | Change only via explicit taxonomy review |

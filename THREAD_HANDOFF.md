@@ -22,6 +22,7 @@ Do not treat this older folder as the working repo:
 
 - This codebase is a production-style marketplace workflow, not a greenfield prototype.
 - The major legacy template and platform-specific noise has already been removed or isolated.
+- The canonical final completion gate is in `LAUNCH_GATE.md`.
 - The canonical integration map is in `INTEGRATIONS.md`.
 - The canonical domain/context map is in `DDD_CONTEXT_MAP.md`.
 - The canonical local operating guide is in `LOCAL_BUILD_STRATEGY.md`.
@@ -43,7 +44,7 @@ Start the next Codex thread in:
 
 Use this opening instruction:
 
-> Treat `/Users/carlg/Documents/AI-Coding/Local-leasemate` as the only canonical LeaseMate repo. Read `INTEGRATIONS.md`, `DDD_CONTEXT_MAP.md`, `LOCAL_BUILD_STRATEGY.md`, and `THREAD_HANDOFF.md` first. Ignore `/Users/carlg/Documents/AI-Coding/leasemate` except as a legacy session anchor.
+> Treat `/Users/carlg/Documents/AI-Coding/Local-leasemate` as the only canonical LeaseMate repo. Read `LAUNCH_GATE.md`, `INTEGRATIONS.md`, `DDD_CONTEXT_MAP.md`, `LOCAL_BUILD_STRATEGY.md`, and `THREAD_HANDOFF.md` first. Ignore `/Users/carlg/Documents/AI-Coding/leasemate` except as a legacy session anchor.
 
 ## Cleanup Rule
 

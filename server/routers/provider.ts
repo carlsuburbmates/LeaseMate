@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc.js";
 import {
   createAuditEvent,
   createException,
@@ -13,6 +13,7 @@ import {
   getInvitationsByProvider,
   getMoveRequestById,
   getMoveRequestItemById,
+  getProductById,
   getProductsByProvider,
   getProviderBillingHistory,
   getProviderProfile,
@@ -23,16 +24,19 @@ import {
   updateInvitation,
   updateProduct,
   updateProviderProfile,
-} from "../db";
-import { notifyOwner } from "../_core/notification";
+} from "../db.js";
+import { notifyOwner } from "../_core/notification.js";
 import {
   createIntroductionFeeCheckout,
   STRIPE_PRICES,
-} from "../lib/stripe";
-import { schedulePaymentDeadlineCheck } from "../lib/qstash";
-import { sendProviderRefundApproved } from "../lib/resend";
-import { ENV } from "../_core/env";
-import { providerProcedure } from "./shared";
+} from "../lib/stripe.js";
+import {
+  schedulePaymentDeadlineCheck,
+  triggerProviderApprovalEvaluation,
+} from "../lib/qstash.js";
+import { sendProviderRefundApproved } from "../lib/resend.js";
+import { ENV } from "../_core/env.js";
+import { providerProcedure } from "./shared.js";
 
 export const providerRouter = router({
   signupProfile: protectedProcedure.query(async ({ ctx }) => {
@@ -83,7 +87,7 @@ export const providerRouter = router({
         actorId: ctx.user.id,
         description: `Provider registered: ${input.businessName}`,
       });
-
+      await triggerProviderApprovalEvaluation(Number((result as any).insertId));
       return { id: Number((result as any).insertId), updated: false };
     }),
 
@@ -105,6 +109,7 @@ export const providerRouter = router({
       }
 
       await updateProviderProfile(profile.id, input);
+      await triggerProviderApprovalEvaluation(profile.id);
       return { success: true };
     }),
 
@@ -139,6 +144,7 @@ export const providerRouter = router({
       }
 
       const result = await createProduct({ ...input, providerId: profile.id });
+      await triggerProviderApprovalEvaluation(profile.id);
       return { id: Number((result as any).insertId) };
     }),
 
@@ -156,15 +162,43 @@ export const providerRouter = router({
         }),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const profile = await getProviderProfile(ctx.user.id);
+      if (!profile) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Provider profile required.",
+        });
+      }
+
+      const product = await getProductById(input.productId);
+      if (!product || product.providerId !== profile.id) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
       await updateProduct(input.productId, input.data);
+      await triggerProviderApprovalEvaluation(profile.id);
       return { success: true };
     }),
 
   deleteProduct: providerProcedure
     .input(z.object({ productId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const profile = await getProviderProfile(ctx.user.id);
+      if (!profile) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Provider profile required.",
+        });
+      }
+
+      const product = await getProductById(input.productId);
+      if (!product || product.providerId !== profile.id) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
       await deleteProduct(input.productId);
+      await triggerProviderApprovalEvaluation(profile.id);
       return { success: true };
     }),
 
@@ -239,6 +273,13 @@ export const providerRouter = router({
       const profile = await getProviderProfile(ctx.user.id);
       if (!profile || invitation.providerId !== profile.id) {
         throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      if (profile.status !== "active") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Finish provider approval before accepting opportunities.",
+        });
       }
 
       if (invitation.status !== "pending") {
@@ -322,6 +363,13 @@ export const providerRouter = router({
       const profile = await getProviderProfile(ctx.user.id);
       if (!profile || invitation.providerId !== profile.id) {
         throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      if (profile.status !== "active") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Finish provider approval before paying an introduction fee.",
+        });
       }
 
       if (invitation.status !== "accepted") {

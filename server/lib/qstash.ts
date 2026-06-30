@@ -16,9 +16,9 @@ import {
   updateIntroductionFee,
   updateInvitation,
   updateProviderProfile,
-} from "../db";
-import { ENV } from "../_core/env";
-import { notifyOwner } from "../_core/notification";
+} from "../db.js";
+import { ENV } from "../_core/env.js";
+import { notifyOwner } from "../_core/notification.js";
 import {
   customerReleases,
   exceptions,
@@ -26,7 +26,8 @@ import {
   moveRequests,
   providerProfiles,
   providerTimeoutLog,
-} from "../../drizzle/schema";
+} from "../../drizzle/schema.js";
+import { evaluateProviderApproval } from "./providerApproval.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_TIMEOUT_MS = 2_147_483_647;
@@ -522,6 +523,16 @@ export async function triggerCustomerDetailsRelease(invitationId: number): Promi
     entityId: invitationId,
     payload: { invitationId },
     runner: () => processCustomerDetailsRelease(invitationId),
+  });
+}
+
+export async function triggerProviderApprovalEvaluation(providerId: number): Promise<void> {
+  await runImmediateTrackedTask({
+    jobType: "provider_approval_evaluation",
+    entityType: "provider_profile",
+    entityId: providerId,
+    payload: { providerId },
+    runner: () => evaluateProviderApproval(providerId),
   });
 }
 

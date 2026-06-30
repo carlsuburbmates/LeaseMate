@@ -5,13 +5,22 @@
  */
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerJobRoutes } from "../server/_core/jobs";
-import { registerStorageProxy } from "../server/_core/storageProxy";
-import { appRouter } from "../server/routers";
-import { createContext } from "../server/_core/context";
-import { registerStripeWebhook } from "../server/stripeWebhook";
+import { registerJobRoutes } from "../server/_core/jobs.js";
+import { registerStorageProxy } from "../server/_core/storageProxy.js";
+import { appRouter } from "../server/routers.js";
+import { createContext } from "../server/_core/context.js";
+import { registerStripeWebhook } from "../server/stripeWebhook.js";
 
 const app = express();
+
+type FallbackRequest = {
+  path: string;
+};
+
+type FallbackResponse = {
+  status: (code: number) => FallbackResponse;
+  json: (body: unknown) => unknown;
+};
 
 // ⚠️ Stripe webhook MUST be registered BEFORE express.json()
 registerStripeWebhook(app);
@@ -33,7 +42,7 @@ app.use(
 
 // SPA fallback — all non-API routes return a simple message
 // (static files are served by Vercel's CDN from outputDirectory)
-app.get("*", (req, res) => {
+app.get("*", (req: FallbackRequest, res: FallbackResponse) => {
   if (
     !req.path.startsWith("/api/") &&
     !req.path.startsWith("/storage/")

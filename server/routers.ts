@@ -1,10 +1,10 @@
-import { systemRouter } from "./_core/systemRouter";
-import { router } from "./_core/trpc";
-import { authRouter } from "./routers/auth";
-import { intakeRouter } from "./routers/intake";
-import { opsRouter } from "./routers/ops";
-import { providerRouter } from "./routers/provider";
-import { referenceRouter } from "./routers/reference";
+import { systemRouter } from "./_core/systemRouter.js";
+import { router } from "./_core/trpc.js";
+import { authRouter } from "./routers/auth.js";
+import { intakeRouter } from "./routers/intake.js";
+import { opsRouter } from "./routers/ops.js";
+import { providerRouter } from "./routers/provider.js";
+import { referenceRouter } from "./routers/reference.js";
 
 export const appRouter = router({
   system: systemRouter,

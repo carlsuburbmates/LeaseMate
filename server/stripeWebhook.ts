@@ -6,10 +6,10 @@
  *   checkout.session.completed → mark invitation as paid, create customer_release,
  *                                 send emails, write audit event
  */
-import express, { type Express, type Request, type Response } from "express";
-import { ENV } from "./_core/env";
-import { constructWebhookEvent } from "./lib/stripe";
-import { getDb } from "./db";
+import express from "express";
+import { ENV } from "./_core/env.js";
+import { constructWebhookEvent } from "./lib/stripe.js";
+import { getDb } from "./db.js";
 import {
   providerInvitations,
   introductionFees,
@@ -17,20 +17,36 @@ import {
   moveRequestItems,
   moveRequests,
   users,
-} from "../drizzle/schema";
+} from "../drizzle/schema.js";
 import { eq } from "drizzle-orm";
-import { notifyOwner } from "./_core/notification";
-import { triggerCustomerDetailsRelease } from "./lib/qstash";
+import { notifyOwner } from "./_core/notification.js";
+import { triggerCustomerDetailsRelease } from "./lib/qstash.js";
 import {
   sendProviderPaymentConfirmed,
   sendCustomerProviderMatched,
-} from "./lib/resend";
+} from "./lib/resend.js";
 
-export function registerStripeWebhook(app: Express): void {
+type HeaderValue = string | string[] | undefined;
+
+type StripeWebhookRequest = {
+  body: Buffer;
+  headers: Record<string, HeaderValue>;
+};
+
+type StripeWebhookResponse = {
+  status: (code: number) => StripeWebhookResponse;
+  json: (body: unknown) => unknown;
+};
+
+type StripeWebhookRouteRegistrar = {
+  post: (...args: any[]) => unknown;
+};
+
+export function registerStripeWebhook(app: StripeWebhookRouteRegistrar): void {
   app.post(
     "/api/stripe/webhook",
     express.raw({ type: "application/json" }),
-    (req: Request, res: Response) => {
+    (req: StripeWebhookRequest, res: StripeWebhookResponse) => {
       const sig = req.headers["stripe-signature"];
       if (typeof sig !== "string" || sig.trim() === "") {
         return res.status(400).json({ error: "Webhook Error: Missing stripe-signature header" });

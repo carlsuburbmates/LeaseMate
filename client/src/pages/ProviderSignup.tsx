@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
@@ -34,7 +34,28 @@ export default function ProviderSignup() {
     onError: (err) => toast.error(err.message),
   });
 
-  if (loading) return null;
+  useEffect(() => {
+    if (!user?.email) return;
+    setForm((current) => (
+      current.contactEmail
+        ? current
+        : { ...current, contactEmail: user.email ?? "" }
+    ));
+  }, [user?.email]);
+
+  if (loading) {
+    return (
+      <PublicLayout>
+        <div className="max-w-lg mx-auto px-6 py-24 text-center">
+          <div className="text-xs font-semibold uppercase tracking-widest text-[#4A7C7E] mb-3">Provider Signup</div>
+          <h1 className="text-3xl font-semibold text-[#2C2C2C] mb-4">Preparing your signup</h1>
+          <p className="text-[#6B6B6B] leading-relaxed">
+            Checking whether you already have a LeaseMate session so we can show the correct provider onboarding step.
+          </p>
+        </div>
+      </PublicLayout>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -60,8 +81,11 @@ export default function ProviderSignup() {
       <PublicLayout>
         <div className="max-w-lg mx-auto px-6 py-24 text-center">
           <CheckCircle2 size={48} className="text-[#4A7C7E] mx-auto mb-4" />
-          <h1 className="text-2xl font-semibold text-[#2C2C2C] mb-2">Profile created</h1>
-          <p className="text-[#6B6B6B]">Redirecting to your provider dashboard…</p>
+          <h1 className="text-2xl font-semibold text-[#2C2C2C] mb-2">Profile submitted</h1>
+          <p className="text-[#6B6B6B]">
+            Redirecting to your provider dashboard. Add your ABN, contact details,
+            suburb, and at least one active product to complete approval.
+          </p>
         </div>
       </PublicLayout>
     );
@@ -73,7 +97,11 @@ export default function ProviderSignup() {
         <div className="mb-10">
           <div className="text-xs font-semibold uppercase tracking-widest text-[#4A7C7E] mb-3">Provider Signup</div>
           <h1 className="text-3xl font-semibold text-[#2C2C2C] tracking-tight mb-2">Complete your provider profile</h1>
-          <p className="text-[#6B6B6B]">This information is used to match you with relevant opportunities.</p>
+          <p className="text-[#6B6B6B]">
+            This information is used to match you with relevant opportunities.
+            Providers are auto-approved once the profile is complete and at least
+            one active product is listed.
+          </p>
         </div>
 
         <div className="bg-white rounded-xl border border-stone-200 p-8 space-y-5">

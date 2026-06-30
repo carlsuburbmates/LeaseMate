@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure } from "../_core/trpc";
+import { protectedProcedure } from "../_core/trpc.js";
 
 function requireRole(
   allowedRoles: string[],

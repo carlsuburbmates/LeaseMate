@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { PauseCircle, PlayCircle } from "lucide-react";
+import { PauseCircle, PlayCircle, ShieldCheck, RefreshCw } from "lucide-react";
 import { OpsLayout } from "./OpsCenter";
 
 export default function OpsProviders() {
@@ -17,12 +17,28 @@ export default function OpsProviders() {
     onSuccess: () => { toast.success("Provider reactivated."); refetch(); },
     onError: (err: any) => toast.error(err.message),
   });
+  const approveProvider = trpc.ops.approveProvider.useMutation({
+    onSuccess: () => { toast.success("Provider approved."); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  const rejectProvider = trpc.ops.rejectProvider.useMutation({
+    onSuccess: () => { toast.success("Provider held for manual review."); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  const reevaluateProvider = trpc.ops.reevaluateProviderApproval.useMutation({
+    onSuccess: () => { toast.success("Provider approval re-evaluated."); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const pendingProviders =
+    (providers as any[] ?? []).filter((provider: any) => provider.status === "pending").length;
 
   return (
     <OpsLayout activeHref="/ops/providers">
       <div className="mb-6 md:mb-8">
         <h1 className="text-xl font-semibold text-white">Provider Management</h1>
-        <p className="text-sm text-white/40 mt-1">All registered providers. Pause or reactivate as needed.</p>
+        <p className="text-sm text-white/40 mt-1">All registered providers. Pause, reactivate, approve, or hold as needed.</p>
+        <p className="text-xs text-white/30 mt-2">{pendingProviders} provider{pendingProviders === 1 ? "" : "s"} currently pending approval.</p>
       </div>
 
       {isLoading ? (
@@ -36,6 +52,7 @@ export default function OpsProviders() {
               <thead>
                 <tr className="border-b border-white/10">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Business</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Approval</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Suburb</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Max/Wk</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
@@ -49,6 +66,14 @@ export default function OpsProviders() {
                       <div className="text-white/80 font-medium">{p.businessName}</div>
                       <div className="text-xs text-white/30">{p.contactEmail}</div>
                     </td>
+                    <td className="px-4 py-3">
+                      <div className="text-white/60 text-xs">
+                        {p.eligibilityStatus?.replace(/_/g, " ") ?? "—"}
+                      </div>
+                      <div className="text-[11px] text-white/30 mt-1 max-w-[220px]">
+                        {p.eligibilityChecks?.summary ?? p.rejectionReason ?? "No approval data yet."}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-white/50">{p.suburb ?? "—"}</td>
                     <td className="px-4 py-3 text-white/50">{p.maxJobsPerWeek}</td>
                     <td className="px-4 py-3">
@@ -59,27 +84,59 @@ export default function OpsProviders() {
                       }`}>{p.status}</span>
                     </td>
                     <td className="px-4 py-3">
-                      {p.status === "active" ? (
+                      <div className="flex flex-wrap gap-2">
+                        {p.status === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="rounded-md bg-green-600/80 hover:bg-green-600 text-white text-xs h-7"
+                              onClick={() => approveProvider.mutate({ providerId: p.id })}
+                            >
+                              <ShieldCheck size={11} className="mr-1" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="rounded-md border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs h-7"
+                              onClick={() => {
+                                const reason = prompt("Reason for holding this provider for manual review:");
+                                if (reason) rejectProvider.mutate({ providerId: p.id, reason });
+                              }}
+                            >
+                              Hold
+                            </Button>
+                          </>
+                        )}
+                        {p.status === "active" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-md border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs h-7"
+                            onClick={() => {
+                              const reason = prompt("Reason for pausing this provider:");
+                              if (reason) pauseProvider.mutate({ providerId: p.id, reason });
+                            }}
+                          >
+                            <PauseCircle size={11} className="mr-1" /> Pause
+                          </Button>
+                        ) : p.status === "paused" ? (
+                          <Button
+                            size="sm"
+                            className="rounded-md bg-green-600/80 hover:bg-green-600 text-white text-xs h-7"
+                            onClick={() => reactivateProvider.mutate({ providerId: p.id })}
+                          >
+                            <PlayCircle size={11} className="mr-1" /> Reactivate
+                          </Button>
+                        ) : null}
                         <Button
                           size="sm"
                           variant="outline"
-                          className="rounded-md border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs h-7"
-                          onClick={() => {
-                            const reason = prompt("Reason for pausing this provider:");
-                            if (reason) pauseProvider.mutate({ providerId: p.id, reason });
-                          }}
+                          className="rounded-md border-white/20 text-white/70 hover:bg-white/10 text-xs h-7"
+                          onClick={() => reevaluateProvider.mutate({ providerId: p.id })}
                         >
-                          <PauseCircle size={11} className="mr-1" /> Pause
+                          <RefreshCw size={11} className="mr-1" /> Re-check
                         </Button>
-                      ) : p.status === "paused" ? (
-                        <Button
-                          size="sm"
-                          className="rounded-md bg-green-600/80 hover:bg-green-600 text-white text-xs h-7"
-                          onClick={() => reactivateProvider.mutate({ providerId: p.id })}
-                        >
-                          <PlayCircle size={11} className="mr-1" /> Reactivate
-                        </Button>
-                      ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

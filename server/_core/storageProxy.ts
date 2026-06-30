@@ -1,9 +1,23 @@
-import type { Express, Request, Response } from "express";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3SignedUrl } from "@aws-sdk/s3-request-presigner";
-import { ENV } from "./env";
+import { ENV } from "./env.js";
 
 let _s3Client: S3Client | null = null;
+
+type StorageRequest = {
+  params?: Record<string, string | undefined>;
+};
+
+type StorageResponse = {
+  status: (code: number) => StorageResponse;
+  set: (name: string, value: string) => StorageResponse;
+  redirect: (status: number, url: string) => void;
+  send: (body: string) => void;
+};
+
+type StorageRouteRegistrar = {
+  get: (...args: any[]) => unknown;
+};
 
 function isS3Configured(): boolean {
   return Boolean(
@@ -39,8 +53,8 @@ function getS3Client() {
   return _s3Client;
 }
 
-async function handleStorageRedirect(req: Request, res: Response) {
-  const key = (req.params as Record<string, string>)[0];
+async function handleStorageRedirect(req: StorageRequest, res: StorageResponse) {
+  const key = req.params?.[0];
   if (!key) {
     res.status(400).send("Missing storage key");
     return;
@@ -77,6 +91,6 @@ async function handleStorageRedirect(req: Request, res: Response) {
   res.status(500).send("Storage proxy not configured");
 }
 
-export function registerStorageProxy(app: Express) {
+export function registerStorageProxy(app: StorageRouteRegistrar) {
   app.get("/storage/*", handleStorageRedirect);
 }

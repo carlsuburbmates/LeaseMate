@@ -1,15 +1,31 @@
-import express, { type Express, type Request, type Response } from "express";
+import express from "express";
 import { Receiver } from "@upstash/qstash";
 import { z } from "zod/v4";
-import { ENV } from "./env";
+import { ENV } from "./env.js";
 import {
   INTERNAL_JOB_HEADER,
   runDailyStaleRequestCleanupTask,
   runPaymentDeadlineCheckTask,
   runProviderTimeoutCheckTask,
-} from "../lib/qstash";
+} from "../lib/qstash.js";
 
 const jsonBodyParser = express.raw({ type: "*/*" });
+
+type JobRequest = {
+  body?: unknown;
+  originalUrl: string;
+  header: (name: string) => string | undefined;
+};
+
+type JobResponse = {
+  status: (code: number) => JobResponse;
+  json: (body: unknown) => void;
+};
+
+type JobRouteRegistrar = {
+  get: (...args: any[]) => unknown;
+  post: (...args: any[]) => unknown;
+};
 
 const delayedInvitationJobSchema = z.object({
   taskId: z.number().int().positive(),
@@ -24,7 +40,7 @@ const qstashReceiver =
       })
     : null;
 
-function readRawBody(req: Request): string {
+function readRawBody(req: JobRequest): string {
   if (Buffer.isBuffer(req.body)) {
     return req.body.toString("utf8");
   }
@@ -34,13 +50,13 @@ function readRawBody(req: Request): string {
   return "";
 }
 
-function parseJsonBody<T>(req: Request, schema: z.ZodSchema<T>): T {
+function parseJsonBody<T>(req: JobRequest, schema: z.ZodSchema<T>): T {
   const rawBody = readRawBody(req);
   const parsed = rawBody.length > 0 ? JSON.parse(rawBody) : {};
   return schema.parse(parsed);
 }
 
-async function authorizeQueuedJob(req: Request): Promise<void> {
+async function authorizeQueuedJob(req: JobRequest): Promise<void> {
   const jobSecret = req.header(INTERNAL_JOB_HEADER);
   if (ENV.internalJobSecret && jobSecret === ENV.internalJobSecret) {
     return;
@@ -58,18 +74,18 @@ async function authorizeQueuedJob(req: Request): Promise<void> {
   });
 }
 
-function authorizeCronRequest(req: Request): boolean {
+function authorizeCronRequest(req: JobRequest): boolean {
   if (!ENV.cronSecret) return false;
   return req.header("authorization") === `Bearer ${ENV.cronSecret}`;
 }
 
-function sendJobError(res: Response, error: unknown) {
+function sendJobError(res: JobResponse, error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   res.status(400).json({ error: message });
 }
 
-export function registerJobRoutes(app: Express) {
-  app.post("/api/jobs/provider-timeout", jsonBodyParser, async (req, res) => {
+export function registerJobRoutes(app: JobRouteRegistrar) {
+  app.post("/api/jobs/provider-timeout", jsonBodyParser, async (req: JobRequest, res: JobResponse) => {
     try {
       await authorizeQueuedJob(req);
       const body = parseJsonBody(req, delayedInvitationJobSchema);
@@ -80,7 +96,7 @@ export function registerJobRoutes(app: Express) {
     }
   });
 
-  app.post("/api/jobs/payment-deadline", jsonBodyParser, async (req, res) => {
+  app.post("/api/jobs/payment-deadline", jsonBodyParser, async (req: JobRequest, res: JobResponse) => {
     try {
       await authorizeQueuedJob(req);
       const body = parseJsonBody(req, delayedInvitationJobSchema);
@@ -91,7 +107,7 @@ export function registerJobRoutes(app: Express) {
     }
   });
 
-  app.get("/api/jobs/stale-request-cleanup", async (req, res) => {
+  app.get("/api/jobs/stale-request-cleanup", async (req: JobRequest, res: JobResponse) => {
     try {
       if (!authorizeCronRequest(req)) {
         throw new Error("Unauthorized cron request.");
@@ -103,7 +119,7 @@ export function registerJobRoutes(app: Express) {
     }
   });
 
-  app.post("/api/jobs/stale-request-cleanup", jsonBodyParser, async (req, res) => {
+  app.post("/api/jobs/stale-request-cleanup", jsonBodyParser, async (req: JobRequest, res: JobResponse) => {
     try {
       await authorizeQueuedJob(req);
       await runDailyStaleRequestCleanupTask();

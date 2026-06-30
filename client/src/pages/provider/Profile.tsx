@@ -7,19 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import PublicLayout from "@/components/PublicLayout";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import { ArrowLeft, User, ToggleLeft, ToggleRight } from "lucide-react";
+import { ArrowLeft, User, ToggleLeft, ToggleRight, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function ProviderProfile() {
   const { isAuthenticated } = useAuth();
   const { data: profile, isLoading, refetch } = trpc.provider.myProfile.useQuery(undefined, { enabled: isAuthenticated });
-  const [form, setForm] = useState({ businessName: "", phone: "", contactEmail: "", suburb: "", maxJobsPerWeek: "10" });
+  const [form, setForm] = useState({ businessName: "", abn: "", phone: "", contactEmail: "", suburb: "", maxJobsPerWeek: "10" });
 
   useEffect(() => {
     if (profile) {
       const p = profile as any;
       setForm({
         businessName: p.businessName ?? "",
+        abn: p.abn ?? "",
         phone: p.phone ?? "",
         contactEmail: p.contactEmail ?? "",
         suburb: p.suburb ?? "",
@@ -37,6 +38,10 @@ export default function ProviderProfile() {
   if (!profile) return null;
 
   const p = profile as any;
+  const approval = p.eligibilityChecks as any;
+  const unmetRequirements =
+    approval?.requirements?.filter((requirement: any) => !requirement.passed) ??
+    [];
 
   return (
     <PublicLayout>
@@ -54,17 +59,49 @@ export default function ProviderProfile() {
           <p className="text-sm text-[#9B9B9B] mt-1">Update your business details and availability settings.</p>
         </div>
 
+        <div className="bg-[#F8F7F4] rounded-xl border border-stone-200 p-5 mb-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck size={18} className="text-[#4A7C7E] mt-0.5" />
+            <div>
+              <div className="text-sm font-semibold text-[#2C2C2C]">
+                Approval status: {p.status === "active" ? "Active" : p.approvalMode === "manual" ? "Manual review" : "Pending requirements"}
+              </div>
+              <p className="text-xs text-[#6B6B6B] mt-1">
+                {approval?.summary ?? "Approval checks will run automatically after profile or product updates."}
+              </p>
+              {p.rejectionReason && (
+                <p className="text-xs text-[#8A5A00] mt-2">
+                  Last operator note: {p.rejectionReason}
+                </p>
+              )}
+              {unmetRequirements.length > 0 && (
+                <ul className="text-xs text-[#6B6B6B] mt-2 space-y-1">
+                  {unmetRequirements.map((requirement: any) => (
+                    <li key={requirement.key}>- {requirement.detail}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Status toggle */}
         <div className="bg-white rounded-xl border border-stone-200 p-5 mb-4 flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold text-[#2C2C2C]">Account Status</div>
             <div className="text-xs text-[#9B9B9B] mt-0.5">
-              {p.status === "active" ? "You are receiving opportunities." : "You are paused. No new opportunities will be sent."}
+              {p.status === "active"
+                ? "You are receiving opportunities."
+                : p.status === "paused"
+                ? "You are paused. No new opportunities will be sent."
+                : p.status === "pending"
+                ? "Complete the approval requirements to activate your provider account."
+                : "Your provider account needs operator attention."}
             </div>
           </div>
-          <div className={`flex items-center gap-2 text-sm font-medium ${p.status === "active" ? "text-green-600" : "text-amber-600"}`}>
+          <div className={`flex items-center gap-2 text-sm font-medium ${p.status === "active" ? "text-green-600" : p.status === "paused" ? "text-amber-600" : "text-[#6B6B6B]"}`}>
             {p.status === "active" ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-            {p.status === "active" ? "Active" : "Paused"}
+            {p.status === "active" ? "Active" : p.status === "paused" ? "Paused" : p.status}
           </div>
         </div>
 
@@ -73,7 +110,11 @@ export default function ProviderProfile() {
             <Label className="text-sm font-medium text-[#2C2C2C] mb-1.5 block">Business Name</Label>
             <Input value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} className="rounded-md border-stone-200" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-[#2C2C2C] mb-1.5 block">ABN</Label>
+              <Input value={form.abn} onChange={(e) => setForm({ ...form, abn: e.target.value })} placeholder="12 345 678 901" className="rounded-md border-stone-200" />
+            </div>
             <div>
               <Label className="text-sm font-medium text-[#2C2C2C] mb-1.5 block">Phone</Label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="04XX XXX XXX" className="rounded-md border-stone-200" />
@@ -104,6 +145,7 @@ export default function ProviderProfile() {
               disabled={updateProfile.isPending}
               onClick={() => updateProfile.mutate({
                 businessName: form.businessName || undefined,
+                abn: form.abn || undefined,
                 phone: form.phone || undefined,
                 contactEmail: form.contactEmail || undefined,
                 suburb: form.suburb || undefined,
