@@ -1,6 +1,6 @@
 # LeaseMate Canonical Integration Register
 
-Last updated: 2026-06-24
+Last updated: 2026-07-01
 
 This file is the canonical source of truth for external integrations in LeaseMate.
 
@@ -58,9 +58,9 @@ These are the non-negotiable tools and techs that make the website run and ship.
 | ORM / query layer | Drizzle ORM + mysql2 | Database access and migrations | Active | `server/db.ts`, `drizzle.config.ts`, `drizzle/schema.ts` |
 | Authentication | JWT + cookie session | Local database-backed login | Active | `server/_core/sdk.ts`, `/login`, `JWT_SECRET` |
 | Payments | Stripe | Provider introduction-fee checkout + webhook flow | Active | `server/lib/stripe.ts`, `server/stripeWebhook.ts` |
-| Email | Resend | Transactional mail and owner alerts | Active in configuration | `server/lib/resend.ts`, `server/_core/notification.ts` |
+| Email | Resend | Transactional mail and owner alerts | Active | `server/lib/resend.ts`, `server/_core/notification.ts` |
 | Storage | AWS SDK S3 + Cloudflare R2 | Remote object storage with local fallback | Active | `server/storage.ts`, `server/_core/storageProxy.ts` |
-| Delayed jobs | Upstash QStash | Durable delayed execution and callback signing | Active in configuration | `server/lib/qstash.ts`, `vercel.json`, `CRON_SECRET` |
+| Delayed jobs | Upstash QStash | Durable delayed execution and callback signing | Active | `server/lib/qstash.ts`, `vercel.json`, `CRON_SECRET` |
 | Deployment | Vercel | Frontend hosting, API runtime, and cron | Active | `vercel.json`, `api/index.ts` |
 | Testing | Vitest | Automated test suite | Active | `package.json` `test` script, existing server tests |
 | Build tooling | esbuild | Server bundling for production | Active | `package.json` `build` script |
@@ -74,10 +74,11 @@ These are the non-negotiable tools and techs that make the website run and ship.
 | Platform | Status | How it connects | Code touchpoints | Env vars | Verification |
 |---|---|---|---|---|---|
 | Vercel | Active | Hosts the frontend build, runs the `api/index.ts` serverless entrypoint, stores production env vars, and triggers daily cron cleanup | `vercel.json`, `api/index.ts`, `server/_core/jobs.ts` | `APP_URL`, production env store | Verified via linked project, deployment list, production env list, and live project metadata on 2026-06-16 |
+| TiDB Cloud Starter | Active | Canonical remote MySQL-compatible database for runtime state, migrations, and seed scripts | `server/db.ts`, `drizzle.config.ts`, `drizzle/schema.ts`, `scripts/seed*.mjs` | `DATABASE_URL` | Re-verified on 2026-07-01: the canonical runtime path connected successfully and returned `select 1`; the earlier shell-level failure came from a stale exported `DATABASE_URL` pointing at a legacy Postgres host rather than the repo's `.env` |
 | Cloudflare R2 | Active | S3-compatible object storage backend for `/storage/*` redirects and any future object writes | `server/_core/storageProxy.ts`, `server/storage.ts`, `server/_core/env.ts` | `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, optional `S3_PUBLIC_BASE_URL`, optional `S3_FORCE_PATH_STYLE` | Verified by successful write/delete health check against the configured bucket on 2026-06-16 |
 | Stripe | Active | Provider introduction-fee checkout, webhook verification, payment persistence, and payment-triggered release flow | `server/lib/stripe.ts`, `server/stripeWebhook.ts`, `server/routers.ts`, `drizzle/schema.ts` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` | Verified on 2026-06-19: live Checkout Session creation succeeded against the LeaseMate sandbox account, signed `checkout.session.completed` webhook processing succeeded through the running local app, payment persistence/release/audit completed, and duplicate delivery stayed idempotent |
-| Resend | Active in configuration | Transactional emails to customers/providers and owner alerts | `server/lib/resend.ts`, `server/_core/notification.ts`, `server/routers.ts`, `server/stripeWebhook.ts`, `server/lib/qstash.ts` | `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, `RESEND_REPLY_TO`, `OWNER_EMAIL` | Verified on 2026-06-19: API key authenticates, account currently has zero verified domains, code now supports the shared onboarding sender until a custom domain is verified |
-| Upstash QStash | Active in configuration | Delayed jobs for provider timeout, payment deadline, and cleanup calls; signature verification for queued callbacks | `server/lib/qstash.ts`, `server/_core/jobs.ts`, `server/routers.ts`, `vercel.json` | `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `CRON_SECRET`, optional `INTERNAL_JOB_SECRET`, `APP_URL` | Verified as configured locally and in Vercel production; publish/verify code paths confirmed; no live publish executed in this audit step |
+| Resend | Active | Transactional emails to customers/providers and owner alerts | `server/lib/resend.ts`, `server/_core/notification.ts`, `server/routers.ts`, `server/stripeWebhook.ts`, `server/lib/qstash.ts` | `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, `RESEND_REPLY_TO`, `OWNER_EMAIL` | Re-verified on 2026-07-01: the canonical runtime path authenticated successfully; the earlier invalid-key result came from a stale shell-exported `RESEND_API_KEY`, not the repo's `.env` |
+| Upstash QStash | Active | Delayed jobs for provider timeout, payment deadline, and cleanup calls; signature verification for queued callbacks | `server/lib/qstash.ts`, `server/_core/jobs.ts`, `server/routers.ts`, `vercel.json` | `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `CRON_SECRET`, optional `INTERNAL_JOB_SECRET`, `APP_URL` | Re-verified on 2026-07-01: authenticated queue listing succeeded through the canonical runtime path; local fallback behavior still exists when remote publish is unavailable |
 
 ## Verified platform state
 
@@ -113,13 +114,14 @@ Current verification state:
 
 - This database path is canonical in code and config.
 - A previous migration and table verification succeeded on 2026-06-14.
-- A fresh connectivity recheck from this machine on 2026-06-16 timed out.
+- A fresh recheck through the canonical runtime path succeeded on 2026-07-01.
+- The failing shell-level check in this thread was traced to a stale exported `DATABASE_URL` pointing at a legacy Supabase/Postgres host, not to the repo's `.env`.
 
 Interpretation:
 
 - The app is built to use TiDB as its canonical remote database.
-- The database should not be treated as newly unknown.
-- The current live network path should be rechecked before calling the database fully healthy again.
+- The database is currently healthy through the canonical local runtime path.
+- Ad-hoc shell commands that do not load `.env` with override can produce false negatives if the shell still has stale exports from older projects.
 
 ### Cloudflare R2
 
@@ -168,11 +170,12 @@ Connection modes:
 
 Current verified state:
 
-- Resend API key is valid
+- Resend API key is valid through the canonical runtime path
 - Resend account currently has zero verified domains
 - The app now supports two explicit sender modes:
 - shared onboarding sender for immediate working delivery
 - custom branded sender after domain verification
+- The earlier invalid-key result in this thread came from a stale shell-exported `RESEND_API_KEY`, not from the repo's `.env`
 
 Operational rule:
 
@@ -198,6 +201,7 @@ Important note:
 - QStash is optional for local development.
 - It becomes the durable delayed-job path in deployment.
 - The app can still run without it because `server/lib/qstash.ts` falls back to local timers.
+- The authenticated queue API is currently reachable through the canonical runtime path.
 
 ## Optional production-only integrations
 
@@ -272,10 +276,11 @@ Important note:
 - If a service appears only in env vars but not in runtime code, treat it as non-canonical until wired into the app.
 - If a service appears in code but has not been live-tested recently, record the last successful verification date here.
 - If a platform has more than one connection surface, document every surface separately.
+- For LeaseMate local runtime checks, remember that `server/_core/index.ts` calls `dotenv.config({ override: true })`. Shell-exported secrets can mislead ad-hoc diagnostics if they are not loaded the same way.
 
 ## Immediate follow-up items
 
-- Re-verify live TiDB connectivity from the current machine before treating the database as healthy.
 - Decide when to switch Resend from the onboarding sender to a verified branded sender.
 - Keep preview secretless until a dedicated preview stack exists.
+- Clear stale exported legacy env vars from any developer shell profile before using ad-hoc integration diagnostics.
 - Remove any remaining Redis env vars from local secret files if they are still present from earlier experiments.
